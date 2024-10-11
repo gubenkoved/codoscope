@@ -14,9 +14,9 @@ LOGGER = logging.getLogger(__name__)
 def entrypoint():
     parser = argparse.ArgumentParser(description='Git stats')
     parser.add_argument('--config-path', type=str, help='Path to config file')
-    parser.add_argument('--state-path', type=str, required=True, help='Path to the state file')
+    parser.add_argument('--state-path', type=str, help='Path to the state file')
+    parser.add_argument('--out-path', type=str, help='Path to file where HTML will be written')
     parser.add_argument('--log-level', type=str, default='INFO', help='Log level')
-    parser.add_argument('--out-path', type=str, required=True, help='Path to file where HTML will be written')
 
     args = parser.parse_args()
 
@@ -25,7 +25,16 @@ def entrypoint():
     coloredlogs.install(level=log_level)
 
     config = load_config(args.config_path)
-    state = load_state(args.state_path) or StateModel()
+
+    state_path = args.state_path or config.get('state-path')
+    if not state_path:
+        raise Exception('state-path is not defined in config or passed as argument')
+
+    out_path = args.out_path or config.get('out-path')
+    if not out_path:
+        raise Exception('out-path is not defined in config or passed as argument')
+
+    state = load_state(state_path) or StateModel()
 
     for source in config['sources']:
         assert source['type'] == 'git'
@@ -40,9 +49,9 @@ def entrypoint():
         )
         state.sources[source_name] = repo_model
 
-    save_sate(args.state_path, state)
+    save_sate(state_path, state)
 
     plot_all(
         state,
-        args.out_path
+        out_path
     )

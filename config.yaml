@@ -1,6 +1,9 @@
+state-path: state.pickle
+out-path: report.html
 sources:
   - name: "source1"
     type: "git"
     path: ~/src/repo
+    ingestion-limit: 100
     branches:
       - master
