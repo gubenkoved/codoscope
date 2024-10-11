@@ -1,5 +1,6 @@
-pygit
+GitPython
 tzlocal
 plotly
 pandas
 coloredlogs
+pyyaml

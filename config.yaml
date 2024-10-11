@@ -1,0 +1,6 @@
+sources:
+  - name: "source1"
+    type: "git"
+    path: ~/src/repo
+    branches:
+      - master

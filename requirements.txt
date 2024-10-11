@@ -6,6 +6,10 @@
 #
 coloredlogs==15.0.1
     # via -r requirements.in
+gitdb==4.0.11
+    # via gitpython
+gitpython==3.1.43
+    # via -r requirements.in
 humanfriendly==10.0
     # via coloredlogs
 numpy==2.1.2
@@ -16,14 +20,16 @@ pandas==2.2.3
     # via -r requirements.in
 plotly==5.24.1
     # via -r requirements.in
-pygit==0.1
-    # via -r requirements.in
 python-dateutil==2.9.0.post0
     # via pandas
 pytz==2024.2
     # via pandas
+pyyaml==6.0.2
+    # via -r requirements.in
 six==1.16.0
     # via python-dateutil
+smmap==5.0.1
+    # via gitdb
 tenacity==9.0.0
     # via plotly
 tzdata==2024.2
