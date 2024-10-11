@@ -11,7 +11,7 @@ import pandas
 
 from codoscope.sources.git import RepoModel
 from codoscope.sources.bitbucket import BitbucketState
-from codoscope.state import StateModel
+from codoscope.state import StateModel, SourceType
 from codoscope.common import date_time_minutes_offset
 
 LOGGER = logging.getLogger(__name__)
@@ -97,7 +97,7 @@ def activity_scatter(state: StateModel):
                     'message': commit.message,
                     'message_first_line': commit.message.split('\n')[0],
                     'changed_lines': commit.stats.changed_lines,
-                    'size_class': max(2.0, min(20.0, 1.5 + 3 * math.log(commit.stats.changed_lines + 1, 10))),
+                    'size_class': max(5.0, min(20.0, 5 + 3 * math.log(commit.stats.changed_lines + 1, 10))),
                     'changed_files': commit.stats.files,
                 })
         elif isinstance(source, BitbucketState):
@@ -107,7 +107,7 @@ def activity_scatter(state: StateModel):
                         data.append({
                             'source': source_name,
                             'source_type': source.source_type,
-                            'source_subtype': None,
+                            'source_subtype': 'pr',
                             'timestamp': pr.created_on,
                             'time_of_day_minutes_offset': date_time_minutes_offset(pr.created_on),
                             'time_of_day': format_minutes_offset(date_time_minutes_offset(pr.created_on)),
@@ -137,14 +137,22 @@ def activity_scatter(state: StateModel):
 
     grouped_df = complete_df.groupby(['author', 'source_type', 'source_subtype'])
 
-    LOGGER.info('groups count: %s', grouped_df.size())
+    LOGGER.info('groups count: %s', grouped_df.ngroups)
+
+    replacement_map = {
+        (SourceType.GIT, ''): 'commit',
+        (SourceType.BITBUCKET, 'pr'): 'pr',
+        (SourceType.BITBUCKET, 'comment'): 'comment',
+    }
 
     for (author, source_type, source_subtype), df in grouped_df:
-        # add scatter traces
-        name='%s %s' % (author, source_type[:3])
-        if source_subtype:
-            name += ' %s' % source_subtype[:3]
-        LOGGER.debug('add series "%s"', name)
+        name= '%s' % author
+        if (source_type, source_subtype) in replacement_map:
+            name += ' %s' % replacement_map[(source_type, source_subtype)]
+        else:
+            name += ' %s' % source_type
+            if source_subtype:
+                name += ' %s' % source_subtype
         trace = go.Scatter(
             name=name,
             x=df['timestamp'],

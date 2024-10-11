@@ -35,7 +35,9 @@ class PullRequestModel:
             self,
             id: str,
             url: str,
-            author_name: str | None, title: str | None,
+            author_name: str | None,
+            title: str | None,
+            description: str | None,
             source_branch: str | None, destination_branch: str | None,
             state: str | None,
             participants: list[PullRequestParticipantModel] | None,
@@ -47,6 +49,7 @@ class PullRequestModel:
         self.url: str = url
         self.author_name: str | None = author_name
         self.title: str | None = title
+        self.description: str | None = description
         self.source_branch: str | None = source_branch
         self.destination_branch: str | None = destination_branch
         self.commentaries: list[CommentModel] = commentaries
@@ -54,6 +57,7 @@ class PullRequestModel:
         self.participants: list[PullRequestParticipantModel] | None = participants
         self.created_on: datetime.datetime = created_on
         self.updated_on: datetime.datetime = updated_on
+        self.meta_version: int | None = 1
 
 
 class RepositoryModel:
@@ -175,6 +179,7 @@ def ingest_bitbucket(config: dict, state: BitbucketState | None) -> BitbucketSta
                     pr.url,
                     author_name,
                     pr.title,
+                    pr.description,
                     pr.source_branch,
                     pr.destination_branch,
                     pr.data.get('state'),
