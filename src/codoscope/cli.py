@@ -328,13 +328,7 @@ def plot_all(state: StateModel, out_path: str):
         f.write('</html>\n')
 
 
-# TODO: allow config to specify both repo path and branches as config for ingestion
-#  so that we can aggregate the data and show all the activity in a single place;
-#  dash framework can be used to have interactive filters probably... or simple "layers"
-#  can be implemented with plotly using separate traces;
-#  then we can add other sources and end up with composed activity report per user
-#  In config add user remapping like canonical name and then all the aliases nested, then we can merge the data
-def main():
+def entrypoint():
     parser = argparse.ArgumentParser(description='Git stats')
     parser.add_argument('--config-path', type=str, help='Path to config file')
     parser.add_argument('--state-path', type=str, required=True, help='Path to the state file')
@@ -369,7 +363,3 @@ def main():
         state,
         args.out_path
     )
-
-
-if __name__ == '__main__':
-    main()
