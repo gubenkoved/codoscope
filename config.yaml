@@ -7,3 +7,15 @@ sources:
     ingestion-limit: 100
     branches:
       - master
+
+  - name: "source2"
+    type: "bitbucket"
+    url: https://api.bitbucket.org
+    username: user
+    password: pass
+    workspace: workspace
+    projects:
+      - name: project1
+        repositories:
+          - name: repo1
+          - name: repo2

@@ -1,14 +1,15 @@
+import datetime
 import enum
 import logging
 import os
 import os.path
 import pickle
-import datetime
 
 LOGGER = logging.getLogger(__name__)
 
 class SourceType(enum.StrEnum):
     GIT = 'git'
+    BITBUCKET = 'bitbucket'
 
 
 class SourceState:
@@ -23,6 +24,7 @@ class StateModel:
         self.created_at: datetime.datetime = datetime.datetime.now()
 
 
+# TODO: add simple compression schema
 def load_state(path: str) -> StateModel | None:
     LOGGER.info('loading state from "%s"', path)
 

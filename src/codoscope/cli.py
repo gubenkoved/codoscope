@@ -4,9 +4,10 @@ import logging
 import coloredlogs
 
 from codoscope.config import load_config
+from codoscope.plot import plot_all
+from codoscope.sources.bitbucket import ingest_bitbucket
 from codoscope.sources.git import ingest_git_repo, RepoModel
 from codoscope.state import load_state, save_sate, StateModel
-from codoscope.plot import plot_all
 
 LOGGER = logging.getLogger(__name__)
 
@@ -37,17 +38,23 @@ def entrypoint():
     state = load_state(state_path) or StateModel()
 
     for source in config['sources']:
-        assert source['type'] == 'git'
         source_name = source['name']
         current_state = state.sources.get(source_name)
-        assert current_state is None or isinstance(current_state, RepoModel)
-        repo_model = ingest_git_repo(
-            current_state,
-            source['path'],
-            source['branches'],
-            source.get('ingestion-limit'),
-        )
-        state.sources[source_name] = repo_model
+
+        if source['type'] == 'git':
+            assert current_state is None or isinstance(current_state, RepoModel)
+            source_state = ingest_git_repo(
+                current_state,
+                source['path'],
+                source['branches'],
+                source.get('ingestion-limit'),
+            )
+        elif source['type'] == 'bitbucket':
+            source_state = ingest_bitbucket(source, current_state)
+        else:
+            raise Exception(f'Unknown source type: {source["type"]}')
+
+        state.sources[source_name] = source_state
 
     save_sate(state_path, state)
 
@@ -55,3 +62,7 @@ def entrypoint():
         state,
         out_path
     )
+
+
+if __name__ == '__main__':
+    entrypoint()

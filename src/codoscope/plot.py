@@ -1,13 +1,16 @@
 import datetime
+import logging
+import math
 import os
 import os.path
-import math
 
 import plotly.express as px
 import tzlocal
 
 from codoscope.sources.git import RepoModel
 from codoscope.state import StateModel
+
+LOGGER = logging.getLogger(__name__)
 
 
 def setup_default_layout(fig, title=None):
@@ -70,7 +73,9 @@ def format_minutes_offset(offset: int):
 def plot_commits_scatter(state: StateModel):
     data = []
     for source_name, source in state.sources.items():
-        assert isinstance(source, RepoModel)
+        if not isinstance(source, RepoModel):
+            LOGGER.warning('skipping source "%s" of type "%s"', source_name, source.source_type)
+            continue
         for commit in source.commits_map.values():
             data.append({
                 'source': source_name,

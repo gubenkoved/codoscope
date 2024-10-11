@@ -4,16 +4,34 @@
 #
 #    pip-compile
 #
+atlassian-python-api==3.41.16
+    # via codoscope (setup.py)
+beautifulsoup4==4.12.3
+    # via atlassian-python-api
+certifi==2024.8.30
+    # via requests
+charset-normalizer==3.4.0
+    # via requests
 coloredlogs==15.0.1
     # via codoscope (setup.py)
+deprecated==1.2.14
+    # via atlassian-python-api
 gitdb==4.0.11
     # via gitpython
 gitpython==3.1.43
     # via codoscope (setup.py)
 humanfriendly==10.0
     # via coloredlogs
+idna==3.10
+    # via requests
+jmespath==1.0.1
+    # via atlassian-python-api
 numpy==2.1.2
     # via pandas
+oauthlib==3.2.2
+    # via
+    #   atlassian-python-api
+    #   requests-oauthlib
 packaging==24.1
     # via plotly
 pandas==2.2.3
@@ -26,13 +44,27 @@ pytz==2024.2
     # via pandas
 pyyaml==6.0.2
     # via codoscope (setup.py)
+requests==2.32.3
+    # via
+    #   atlassian-python-api
+    #   requests-oauthlib
+requests-oauthlib==2.0.0
+    # via atlassian-python-api
 six==1.16.0
-    # via python-dateutil
+    # via
+    #   atlassian-python-api
+    #   python-dateutil
 smmap==5.0.1
     # via gitdb
+soupsieve==2.6
+    # via beautifulsoup4
 tenacity==9.0.0
     # via plotly
 tzdata==2024.2
     # via pandas
 tzlocal==5.2
     # via codoscope (setup.py)
+urllib3==2.2.3
+    # via requests
+wrapt==1.16.0
+    # via deprecated
