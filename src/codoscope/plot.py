@@ -5,10 +5,14 @@ import os
 import os.path
 
 import plotly.express as px
+import plotly.graph_objects as go
 import tzlocal
+import pandas
 
 from codoscope.sources.git import RepoModel
+from codoscope.sources.bitbucket import BitbucketState
 from codoscope.state import StateModel
+from codoscope.common import date_time_minutes_offset
 
 LOGGER = logging.getLogger(__name__)
 
@@ -70,47 +74,94 @@ def format_minutes_offset(offset: int):
     return f'{hours:02}:{minutes:02}'
 
 
-def plot_commits_scatter(state: StateModel):
+# TODO: we need to realign the BitBucket data
+#  following might work: find the tz offset for each user by comparing activity distributions
+#  and figuring out how to move BitBucket data into Git data so that they align the most?
+#  This is purely a heuristic though...
+def activity_scatter(state: StateModel):
+    fig = go.Figure()
+
     data = []
     for source_name, source in state.sources.items():
-        if not isinstance(source, RepoModel):
+        if isinstance(source, RepoModel):
+            for commit in source.commits_map.values():
+                data.append({
+                    'source': source_name,
+                    'source_type': source.source_type,
+                    'source_subtype': None,
+                    'timestamp': commit.committed_datetime,
+                    'time_of_day_minutes_offset': commit.committed_date_time_minutes_offset,
+                    'time_of_day': format_minutes_offset(commit.committed_date_time_minutes_offset),
+                    'author': commit.author_name,
+                    'sha': commit.hexsha,
+                    'message': commit.message,
+                    'message_first_line': commit.message.split('\n')[0],
+                    'changed_lines': commit.stats.changed_lines,
+                    'size_class': max(2.0, min(20.0, 1.5 + 3 * math.log(commit.stats.changed_lines + 1, 10))),
+                    'changed_files': commit.stats.files,
+                })
+        elif isinstance(source, BitbucketState):
+            for project_name, project in source.projects_map.items():
+                for repo_name, repo in project.repositories_map.items():
+                    for pr_name, pr in repo.pull_requests_map.items():
+                        data.append({
+                            'source': source_name,
+                            'source_type': source.source_type,
+                            'source_subtype': None,
+                            'timestamp': pr.created_on,
+                            'time_of_day_minutes_offset': date_time_minutes_offset(pr.created_on),
+                            'time_of_day': format_minutes_offset(date_time_minutes_offset(pr.created_on)),
+                            'size_class': 15,
+                            'author': pr.author_name,
+                        })
+                        for comment in pr.commentaries:
+                            data.append({
+                                'source': source_name,
+                                'source_type': source.source_type,
+                                'source_subtype': 'comment',
+                                'timestamp': comment.created_on,
+                                'time_of_day_minutes_offset': date_time_minutes_offset(comment.created_on),
+                                'time_of_day': format_minutes_offset(date_time_minutes_offset(comment.created_on)),
+                                'size_class': 5,
+                                'author': comment.author_name,
+                            })
+        else:
             LOGGER.warning('skipping source "%s" of type "%s"', source_name, source.source_type)
-            continue
-        for commit in source.commits_map.values():
-            data.append({
-                'source': source_name,
-                'source_type': source.source_type,
-                'timestamp': commit.committed_datetime,
-                'time_of_day_minutes_offset': commit.committed_date_time_minutes_offset,
-                'time_of_day': format_minutes_offset(commit.committed_date_time_minutes_offset),
-                'author': commit.author_name,
-                'sha': commit.hexsha,
-                'message': commit.message,
-                'message_first_line': commit.message.split('\n')[0],
-                'changed_lines': commit.stats.changed_lines,
-                'changed_lines_size_class': max(2.0, min(20.0, 1.5 + 3 * math.log(commit.stats.changed_lines + 1, 10))),
-                'changed_files': commit.stats.files,
-            })
 
     data.sort(key=lambda x: (x['author'], x['timestamp']))
 
-    # TODO: add via multiple traces for each source so that it can be controlled separately
-    fig = px.scatter(
-        x='timestamp',
-        y='time_of_day_minutes_offset',
-        color='author',
-        size='changed_lines_size_class',
-        size_max=20,
-        hover_data=['source', 'timestamp', 'time_of_day', 'author', 'sha', 'changed_lines', 'changed_files', 'message_first_line'],
-        data_frame=data,
-        opacity=0.9,
-    )
+    LOGGER.info('data points count: %d', len(data))
 
-    fig.update_traces(
-        marker_symbol='circle',
-    )
+    complete_df = pandas.DataFrame(data)
+    complete_df['source_subtype'] = complete_df['source_subtype'].fillna('')
 
-    setup_default_layout(fig, 'All commits')
+    grouped_df = complete_df.groupby(['author', 'source_type', 'source_subtype'])
+
+    LOGGER.info('groups count: %s', grouped_df.size())
+
+    for (author, source_type, source_subtype), df in grouped_df:
+        # add scatter traces
+        name='%s %s' % (author, source_type[:3])
+        if source_subtype:
+            name += ' %s' % source_subtype[:3]
+        LOGGER.debug('add series "%s"', name)
+        trace = go.Scatter(
+            name=name,
+            x=df['timestamp'],
+            y=df['time_of_day_minutes_offset'],
+            mode='markers',
+            # TODO: handle it
+            # hover_data=['source', 'timestamp', 'time_of_day', 'author', 'sha', 'changed_lines', 'changed_files', 'message_first_line'],
+            opacity=0.9,
+            marker=dict(
+                size=df['size_class'],
+                # TODO: do we even need it given there will be a color per trace?
+                # color=df['author']
+            ),
+        )
+        fig.add_trace(trace)
+
+    setup_default_layout(fig, 'All activity')
 
     tickvals, ticktext = time_axis()
 
@@ -150,7 +201,7 @@ def mostly_changed_places(repo_model: RepoModel):
 
 def plot_all(state: StateModel, out_path: str):
     figures = [
-        plot_commits_scatter(state),
+        activity_scatter(state),
     ]
 
     out_path = os.path.abspath(out_path)

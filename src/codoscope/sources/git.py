@@ -4,6 +4,7 @@ import logging
 import git
 
 from codoscope.state import SourceState, SourceType
+from codoscope.common import date_time_minutes_offset
 
 LOGGER = logging.getLogger(__name__)
 
@@ -45,8 +46,8 @@ class CommitModel:
 
     @property
     def committed_date_time_minutes_offset(self):
-        time = self.committed_datetime.time()
-        return time.hour * 60 + time.minute
+        return date_time_minutes_offset(self.committed_datetime)
+
 
 class RepoModel(SourceState):
     def __init__(self):
