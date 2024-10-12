@@ -1,10 +1,10 @@
 import datetime
 import logging
 import math
-import dateutil.parser
 from typing import Optional
 
 import atlassian.bitbucket as api
+import dateutil.parser
 
 from codoscope.state import SourceState, SourceType
 
