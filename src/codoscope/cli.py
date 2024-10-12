@@ -14,8 +14,8 @@ from codoscope.reports.registry import REPORTS_BY_TYPE
 LOGGER = logging.getLogger(__name__)
 
 
-def ingest(config: dict, state: StateModel):
-    for source_config in config['sources']:
+def ingest(ingestion_config: dict, state: StateModel):
+    for source_config in ingestion_config['sources']:
         source_name = source_config['name']
         current_state = state.sources.get(source_name)
 
@@ -59,9 +59,16 @@ def entrypoint():
 
     state = load_state(state_path) or StateModel()
 
-    if not config.get('skip-ingestion', False):
-        ingest(config, state)
-        save_sate(state_path, state)
+    ingestion_config = config.get('ingestion', {})
+    if ingestion_config.get('enabled', True):
+        ingestion_rounds = ingestion_config.get('rounds', 1)
+        for round_idx in range(1, ingestion_rounds + 1):
+            LOGGER.info('start ingestion round %d', round_idx)
+            try:
+                ingest(ingestion_config, state)
+                save_sate(state_path, state)
+            except Exception as err:
+                LOGGER.error('ingestion round %d failed! %s', round_idx, err)
     else:
         LOGGER.warning('skipped ingestion as requested')
 

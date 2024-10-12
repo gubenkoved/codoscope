@@ -1,24 +1,27 @@
 state-path: state.pickle
 
-sources:
-  - name: "source1"
-    type: "git"
-    path: ~/src/repo
-    ingestion-limit: 100
-    branches:
-      - master
+ingestion:
+  enabled: true
+  sources:
+    - name: "source1"
+      type: "git"
+      enabled: true
+      path: ~/src/repo
+      ingestion-limit: 100
+      branches:
+        - master
 
-  - name: "source2"
-    type: "bitbucket"
-    url: https://api.bitbucket.org
-    username: user
-    password: pass
-    workspace: workspace
-    projects:
-      - name: project1
-        repositories:
-          - name: repo1
-          - name: repo2
+    - name: "source2"
+      type: "bitbucket"
+      url: https://api.bitbucket.org
+      username: user
+      password: pass
+      workspace: workspace
+      projects:
+        - name: project1
+          repositories:
+            - name: repo1
+            - name: repo2
 
 reports:
   - name: overview
@@ -27,5 +30,6 @@ reports:
 
   - name: overview-filtered
     type: overview-filtered
+    enabled: true
     out-path: overview-filtered.html
     filter: "'John' in author"
