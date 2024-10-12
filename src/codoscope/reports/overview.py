@@ -118,6 +118,7 @@ def activity_scatter(state: StateModel, filter_expr: str | None):
                             'author': pr.author_name,
                         })
                         for comment in pr.commentaries:
+                            is_answering_your_own_pr = comment.author_name == pr.author_name
                             data.append({
                                 'source_name': source_name,
                                 'source_type': source.source_type.value,
@@ -126,8 +127,9 @@ def activity_scatter(state: StateModel, filter_expr: str | None):
                                 'timestamp': comment.created_on,
                                 'time_of_day_minutes_offset': date_time_minutes_offset(comment.created_on),
                                 'time_of_day': format_minutes_offset(date_time_minutes_offset(comment.created_on)),
-                                'size_class': 5,
+                                'size_class': 4 if is_answering_your_own_pr else 6,
                                 'author': comment.author_name,
+                                'is_answering_your_own_pr': is_answering_your_own_pr,
                             })
         else:
             LOGGER.warning('skipping source "%s" of type "%s"', source_name, source.source_type)
