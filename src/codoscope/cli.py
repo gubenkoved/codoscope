@@ -33,22 +33,26 @@ def entrypoint():
 
     state = load_state(state_path) or StateModel()
 
-    for source in config['sources']:
-        source_name = source['name']
+    for source_config in config['sources']:
+        source_name = source_config['name']
         current_state = state.sources.get(source_name)
 
-        if source['type'] == 'git':
+        if not source_config.get('enabled', True):
+            LOGGER.warning('skip disabled "%s" source', source_name)
+            continue
+
+        if source_config['type'] == 'git':
             assert current_state is None or isinstance(current_state, RepoModel)
             source_state = ingest_git_repo(
                 current_state,
-                source['path'],
-                source['branches'],
-                source.get('ingestion-limit'),
+                source_config['path'],
+                source_config['branches'],
+                source_config.get('ingestion-limit'),
             )
-        elif source['type'] == 'bitbucket':
-            source_state = ingest_bitbucket(source, current_state)
+        elif source_config['type'] == 'bitbucket':
+            source_state = ingest_bitbucket(source_config, current_state)
         else:
-            raise Exception(f'Unknown source type: {source["type"]}')
+            raise Exception(f'Unknown source type: {source_config["type"]}')
 
         state.sources[source_name] = source_state
 
@@ -56,10 +60,18 @@ def entrypoint():
 
     # render reports
     for report_config in config['reports']:
-        LOGGER.info('render "%s" report', report_config['name'])
+        report_name = report_config['name']
+
+        if not report_config.get('enabled', True):
+            LOGGER.warning('skip disabled "%s" report', report_name)
+            continue
+
+        LOGGER.info('render "%s" report', report_name)
         report_class = REPORTS_BY_TYPE.get(ReportType(report_config['type']))
+
         if report_class is None:
             raise Exception('unable to find report type "%s"', report_config['type'])
+
         report_instance = report_class()
         report_instance.generate(report_config, state)
 

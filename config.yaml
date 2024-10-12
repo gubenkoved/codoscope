@@ -24,3 +24,8 @@ reports:
   - name: overview
     type: overview
     out-path: overview.html
+
+  - name: overview-filtered
+    type: overview-filtered
+    out-path: overview-filtered.html
+    filter: "'John' in author"

@@ -21,6 +21,7 @@ def setup_default_layout(fig, title=None):
     fig.update_layout(
         title=title,
         title_font_family="Ubuntu",
+        # title_font_variant="small-caps",
         font_family="Ubuntu",
         plot_bgcolor='white',
         xaxis=dict(
@@ -78,17 +79,17 @@ def format_minutes_offset(offset: int):
 #  following might work: find the tz offset for each user by comparing activity distributions
 #  and figuring out how to move BitBucket data into Git data so that they align the most?
 #  This is purely a heuristic though...
-def activity_scatter(state: StateModel):
-    fig = go.Figure()
-
+#  ... and this should probably be a separate pre-processing step, not inherent to reports
+def activity_scatter(state: StateModel, filter_expr: str | None):
     data = []
     for source_name, source in state.sources.items():
         if isinstance(source, RepoModel):
             for commit in source.commits_map.values():
                 data.append({
-                    'source': source_name,
-                    'source_type': source.source_type,
+                    'source_name': source_name,
+                    'source_type': source.source_type.value,
                     'source_subtype': None,
+                    'activity_type': 'commit',
                     'timestamp': commit.committed_datetime,
                     'time_of_day_minutes_offset': commit.committed_date_time_minutes_offset,
                     'time_of_day': format_minutes_offset(commit.committed_date_time_minutes_offset),
@@ -105,9 +106,10 @@ def activity_scatter(state: StateModel):
                 for repo_name, repo in project.repositories_map.items():
                     for pr_name, pr in repo.pull_requests_map.items():
                         data.append({
-                            'source': source_name,
-                            'source_type': source.source_type,
+                            'source_name': source_name,
+                            'source_type': source.source_type.value,
                             'source_subtype': 'pr',
+                            'activity_type': 'pr',
                             'timestamp': pr.created_on,
                             'time_of_day_minutes_offset': date_time_minutes_offset(pr.created_on),
                             'time_of_day': format_minutes_offset(date_time_minutes_offset(pr.created_on)),
@@ -116,9 +118,10 @@ def activity_scatter(state: StateModel):
                         })
                         for comment in pr.commentaries:
                             data.append({
-                                'source': source_name,
-                                'source_type': source.source_type,
+                                'source_name': source_name,
+                                'source_type': source.source_type.value,
                                 'source_subtype': 'comment',
+                                'activity_type': 'comment',
                                 'timestamp': comment.created_on,
                                 'time_of_day_minutes_offset': date_time_minutes_offset(comment.created_on),
                                 'time_of_day': format_minutes_offset(date_time_minutes_offset(comment.created_on)),
@@ -128,48 +131,16 @@ def activity_scatter(state: StateModel):
         else:
             LOGGER.warning('skipping source "%s" of type "%s"', source_name, source.source_type)
 
-    data.sort(key=lambda x: (x['author'], x['timestamp']))
+    fig = go.Figure()
 
-    LOGGER.info('data points count: %d', len(data))
+    title = 'Overview'
+    if filter_expr:
+        title += ' (%s)' % filter_expr
 
-    complete_df = pandas.DataFrame(data)
-    complete_df['source_subtype'] = complete_df['source_subtype'].fillna('')
-
-    grouped_df = complete_df.groupby(['author', 'source_type', 'source_subtype'])
-
-    LOGGER.info('groups count: %s', grouped_df.ngroups)
-
-    replacement_map = {
-        (SourceType.GIT, ''): 'commit',
-        (SourceType.BITBUCKET, 'pr'): 'pr',
-        (SourceType.BITBUCKET, 'comment'): 'comment',
-    }
-
-    for (author, source_type, source_subtype), df in grouped_df:
-        name= '%s' % author
-        if (source_type, source_subtype) in replacement_map:
-            name += ' %s' % replacement_map[(source_type, source_subtype)]
-        else:
-            name += ' %s' % source_type
-            if source_subtype:
-                name += ' %s' % source_subtype
-        trace = go.Scatter(
-            name=name,
-            x=df['timestamp'],
-            y=df['time_of_day_minutes_offset'],
-            mode='markers',
-            # TODO: handle it
-            # hover_data=['source', 'timestamp', 'time_of_day', 'author', 'sha', 'changed_lines', 'changed_files', 'message_first_line'],
-            opacity=0.9,
-            marker=dict(
-                size=df['size_class'],
-                # TODO: do we even need it given there will be a color per trace?
-                # color=df['author']
-            ),
-        )
-        fig.add_trace(trace)
-
-    setup_default_layout(fig, 'All activity')
+    setup_default_layout(
+        fig,
+        title=title,
+    )
 
     tickvals, ticktext = time_axis()
 
@@ -183,6 +154,48 @@ def activity_scatter(state: StateModel):
         yaxis_title='Time of the day',
         xaxis_title='Timestamp',
     )
+
+    # sort for predictable labels order for traces
+    data.sort(key=lambda x: (x['author'], x['source_type'], x['source_subtype'], x['timestamp']))
+
+    # apply filters if applicable
+    if filter_expr:
+        count_before_filter = len(data)
+        data = filter(data, filter_expr)
+        count_after_filter = len(data)
+        LOGGER.info('filter "%s" left %d of %d data points', filter_expr, count_after_filter, count_before_filter)
+
+    LOGGER.info('data points to render: %d', len(data))
+
+    if len(data) == 0:
+        LOGGER.warning('no data to show')
+        return fig
+
+    complete_df = pandas.DataFrame(data)
+    complete_df['source_subtype'] = complete_df['source_subtype'].fillna('')
+
+    grouped_df = complete_df.groupby(['author', 'activity_type'])
+
+    LOGGER.info('groups count: %s', grouped_df.ngroups)
+
+    for (author, activity_type), df in grouped_df:
+        name = '%s %s' % (author, activity_type)
+        trace = go.Scatter(
+            name=name,
+            showlegend=True,
+            x=df['timestamp'],
+            y=df['time_of_day_minutes_offset'],
+            mode='markers',
+            # TODO: handle it
+            # hover_data=['source', 'timestamp', 'time_of_day', 'author', 'sha', 'changed_lines', 'changed_files', 'message_first_line'],
+            opacity=0.9,
+            marker=dict(
+                size=df['size_class'],
+                # TODO: do we even need it given there will be a color per trace?
+                # color=df['author']
+            ),
+        )
+        fig.add_trace(trace)
 
     return fig
 
@@ -207,19 +220,26 @@ def mostly_changed_places(repo_model: RepoModel):
     pass
 
 
+def filter(data: list[dict], expr: str):
+    compiled = compile(expr, 'filter', 'eval')
+    return [x for x in data if eval(compiled, x)]
+
+
 class OverviewReport(ReportBase):
     @classmethod
     def get_type(cls) -> ReportType:
         return ReportType.OVERVIEW
 
     def generate(self, config: dict, state: StateModel):
-        figures = [
-            activity_scatter(state),
-        ]
-
         out_path = os.path.abspath(config['out-path'])
         if not os.path.exists(os.path.dirname(out_path)):
             os.makedirs(os.path.dirname(out_path))
+
+        filter_expr = config.get('filter')
+
+        figures = [
+            activity_scatter(state, filter_expr),
+        ]
 
         local_tz = tzlocal.get_localzone()
         now = datetime.datetime.now(local_tz)
@@ -233,7 +253,7 @@ class OverviewReport(ReportBase):
         with open(out_path, 'w') as f:
             f.write('<html>\n')
             f.write('<head>\n')
-            f.write('<title>Repo stats</title>\n')
+            f.write('<title>codoscope :: overview</title>\n')
             f.write("<link href='http://fonts.googleapis.com/css?family=Ubuntu' rel='stylesheet' type='text/css'>\n")
             f.write('<style>body { font-family: "Ubuntu"; }</style>\n')
             f.write('</head>\n')
