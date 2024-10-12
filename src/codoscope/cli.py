@@ -9,7 +9,7 @@ from codoscope.reports.registry import REPORTS_BY_TYPE
 from codoscope.sources.bitbucket import ingest_bitbucket
 from codoscope.sources.git import ingest_git_repo, RepoModel
 from codoscope.sources.jira import ingest_jira
-from codoscope.state import load_state, save_sate, StateModel
+from codoscope.state import StateModel
 
 LOGGER = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ def entrypoint():
     if not state_path:
         raise Exception('state-path is not defined in config or passed as argument')
 
-    state = load_state(state_path) or StateModel()
+    state = StateModel.load(state_path) or StateModel()
 
     ingestion_config = config.get('ingestion', {})
     if ingestion_config.get('enabled', True):
@@ -68,7 +68,7 @@ def entrypoint():
             LOGGER.info('start ingestion round #%d', round_idx)
             try:
                 ingest(ingestion_config, state)
-                save_sate(state_path, state)
+                state.save(state_path)
             except Exception as err:
                 LOGGER.error('ingestion round #%d failed! %r', round_idx, err)
     else:
