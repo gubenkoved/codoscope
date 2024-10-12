@@ -124,7 +124,7 @@ def activity_scatter(state: StateModel, filter_expr: str | None):
                                 'source_name': source_name,
                                 'source_type': source.source_type.value,
                                 'source_subtype': 'comment',
-                                'activity_type': 'comment',
+                                'activity_type': 'pr comment',
                                 'timestamp': comment.created_on,
                                 'time_of_day_minutes_offset': date_time_minutes_offset(comment.created_on),
                                 'time_of_day': format_minutes_offset(date_time_minutes_offset(comment.created_on)),
