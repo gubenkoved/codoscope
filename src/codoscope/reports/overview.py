@@ -9,10 +9,11 @@ import plotly.graph_objects as go
 import tzlocal
 
 from codoscope.common import date_time_minutes_offset
+from codoscope.reports.base import ReportBase, ReportType
 from codoscope.sources.bitbucket import BitbucketState
 from codoscope.sources.git import RepoModel
-from codoscope.state import StateModel, SourceType
-from codoscope.reports.base import ReportBase, ReportType
+from codoscope.sources.jira import JiraState
+from codoscope.state import StateModel
 
 LOGGER = logging.getLogger(__name__)
 
@@ -131,6 +132,19 @@ def activity_scatter(state: StateModel, filter_expr: str | None):
                                 'author': comment.author_name,
                                 'is_answering_your_own_pr': is_answering_your_own_pr,
                             })
+        elif isinstance(source, JiraState):
+            for item in source.items_map.values():
+                data.append({
+                    'source_name': source_name,
+                    'source_type': source.source_type.value,
+                    'source_subtype': item.item_type,
+                    'activity_type': 'created %s' % item.item_type,
+                    'timestamp': item.created_on,
+                    'time_of_day_minutes_offset': date_time_minutes_offset(item.created_on),
+                    'time_of_day': format_minutes_offset(date_time_minutes_offset(item.created_on)),
+                    'size_class': 8,
+                    'author': item.creator.display_name,
+                })
         else:
             LOGGER.warning('skipping source "%s" of type "%s"', source_name, source.source_type)
 
@@ -248,11 +262,6 @@ class OverviewReport(ReportBase):
         now = datetime.datetime.now(local_tz)
         tz_name = local_tz.tzname(now)
 
-        total_commits = 0
-        for source in state.sources.values():
-            if isinstance(source, RepoModel):
-                total_commits += source.commits_count
-
         with open(out_path, 'w') as f:
             f.write('<html>\n')
             f.write('<head>\n')
@@ -264,7 +273,7 @@ class OverviewReport(ReportBase):
             f.write(
                 f"""
                 <div style="color: lightgray; font-size: 11px; position: fixed; bottom: 10px; right: 10px;">
-                    <i>last updated on {now.strftime('%B %d, %Y at %H:%M:%S')} {tz_name}, commits {total_commits}</i>\n
+                    <i>last updated on {now.strftime('%B %d, %Y at %H:%M:%S')} {tz_name}</i>\n
                 </div>
                 """
             )

@@ -23,6 +23,13 @@ ingestion:
             - name: repo1
             - name: repo2
 
+    - name: "jira"
+      type: "jira"
+      url: https://YOUR.atlassian.net/
+      ingestion-limit: 1000
+      username: username@domain.com
+      password: ACCESS_TOKEN
+
 reports:
   - name: overview
     type: overview

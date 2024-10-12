@@ -2,14 +2,14 @@ import argparse
 import logging
 
 import coloredlogs
-from pandas.core.indexes.base import str_t
 
 from codoscope.config import load_config
 from codoscope.reports.base import ReportType
+from codoscope.reports.registry import REPORTS_BY_TYPE
 from codoscope.sources.bitbucket import ingest_bitbucket
 from codoscope.sources.git import ingest_git_repo, RepoModel
+from codoscope.sources.jira import ingest_jira
 from codoscope.state import load_state, save_sate, StateModel
-from codoscope.reports.registry import REPORTS_BY_TYPE
 
 LOGGER = logging.getLogger(__name__)
 
@@ -33,6 +33,8 @@ def ingest(ingestion_config: dict, state: StateModel):
             )
         elif source_config['type'] == 'bitbucket':
             source_state = ingest_bitbucket(source_config, current_state)
+        elif source_config['type'] == 'jira':
+            source_state = ingest_jira(source_config, current_state)
         else:
             raise Exception(f'Unknown source type: {source_config["type"]}')
 
@@ -63,12 +65,12 @@ def entrypoint():
     if ingestion_config.get('enabled', True):
         ingestion_rounds = ingestion_config.get('rounds', 1)
         for round_idx in range(1, ingestion_rounds + 1):
-            LOGGER.info('start ingestion round %d', round_idx)
+            LOGGER.info('start ingestion round #%d', round_idx)
             try:
                 ingest(ingestion_config, state)
                 save_sate(state_path, state)
             except Exception as err:
-                LOGGER.error('ingestion round %d failed! %s', round_idx, err)
+                LOGGER.error('ingestion round #%d failed! %r', round_idx, err)
     else:
         LOGGER.warning('skipped ingestion as requested')
 

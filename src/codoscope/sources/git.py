@@ -3,8 +3,8 @@ import logging
 
 import git
 
-from codoscope.state import SourceState, SourceType
 from codoscope.common import date_time_minutes_offset
+from codoscope.state import SourceState, SourceType
 
 LOGGER = logging.getLogger(__name__)
 

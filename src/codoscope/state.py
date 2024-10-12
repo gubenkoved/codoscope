@@ -10,6 +10,7 @@ LOGGER = logging.getLogger(__name__)
 class SourceType(enum.StrEnum):
     GIT = 'git'
     BITBUCKET = 'bitbucket'
+    JIRA = 'jira'
 
 
 class SourceState:
