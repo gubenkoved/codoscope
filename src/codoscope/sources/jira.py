@@ -18,6 +18,12 @@ class ActorModel:
         self.email: str | None = email
 
 
+class JiraCommentModel:
+    def __init__(self, created_by: ActorModel, created_on: datetime.datetime):
+        self.created_by: ActorModel = created_by
+        self.created_on: datetime.datetime = created_on
+
+
 class JiraItemModel:
     def __init__(
             self,
@@ -31,6 +37,7 @@ class JiraItemModel:
             assignee: ActorModel | None,
             reporter: ActorModel | None,
             components: list[str] | None,
+            comments: list[JiraCommentModel] | None,
             created_on: datetime.datetime,
             updated_on: datetime.datetime | None):
         self.id: str = id
@@ -43,6 +50,7 @@ class JiraItemModel:
         self.assignee: ActorModel | None = assignee
         self.reporter: ActorModel | None = reporter
         self.components: list[str] | None = components
+        self.comments: list[JiraCommentModel] | None = comments
         self.created_on: datetime.datetime | None = created_on
         self.updated_on: datetime.datetime | None = updated_on
 
@@ -92,6 +100,17 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
             return None
         return [component['name'] for component in data]
 
+    def convert_comments(data) -> list[JiraCommentModel]:
+        if not data:
+            return []
+        return [
+            JiraCommentModel(
+                convert_actor(comment['author']),
+                dateutil.parser.parse(comment['created'])
+            )
+            for comment in data
+        ]
+
     cutoff_date = state.cutoff_date
 
     while True:
@@ -114,6 +133,7 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
                 convert_actor(issue['fields'].get('assignee')),
                 convert_actor(issue['fields'].get('reporter')),
                 convert_components(issue['fields'].get('components')),
+                convert_comments(issue['fields'].get('comment', {}).get('comments')),
                 dateutil.parser.parse(issue['fields']['created']),
                 dateutil.parser.parse(issue['fields']['updated']),
             )
