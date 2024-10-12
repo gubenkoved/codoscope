@@ -4,15 +4,15 @@ import math
 import os
 import os.path
 
-import plotly.express as px
+import pandas
 import plotly.graph_objects as go
 import tzlocal
-import pandas
 
-from codoscope.sources.git import RepoModel
-from codoscope.sources.bitbucket import BitbucketState
-from codoscope.state import StateModel, SourceType
 from codoscope.common import date_time_minutes_offset
+from codoscope.sources.bitbucket import BitbucketState
+from codoscope.sources.git import RepoModel
+from codoscope.state import StateModel, SourceType
+from codoscope.reports.base import ReportBase, ReportType
 
 LOGGER = logging.getLogger(__name__)
 
@@ -207,36 +207,45 @@ def mostly_changed_places(repo_model: RepoModel):
     pass
 
 
-def plot_all(state: StateModel, out_path: str):
-    figures = [
-        activity_scatter(state),
-    ]
+class OverviewReport(ReportBase):
+    @classmethod
+    def get_type(cls) -> ReportType:
+        return ReportType.OVERVIEW
 
-    out_path = os.path.abspath(out_path)
-    if not os.path.exists(os.path.dirname(out_path)):
-        os.makedirs(os.path.dirname(out_path))
+    def generate(self, config: dict, state: StateModel):
+        figures = [
+            activity_scatter(state),
+        ]
 
-    local_tz = tzlocal.get_localzone()
-    now = datetime.datetime.now(local_tz)
-    tz_name = local_tz.tzname(now)
+        out_path = os.path.abspath(config['out-path'])
+        if not os.path.exists(os.path.dirname(out_path)):
+            os.makedirs(os.path.dirname(out_path))
 
-    total_commits = 0
-    for source in state.sources.values():
-        if isinstance(source, RepoModel):
-            total_commits += source.commits_count
+        local_tz = tzlocal.get_localzone()
+        now = datetime.datetime.now(local_tz)
+        tz_name = local_tz.tzname(now)
 
-    with open(out_path, 'w') as f:
-        f.write('<html>\n')
-        f.write('<head>\n')
-        f.write('<title>Repo stats</title>\n')
-        f.write("<link href='http://fonts.googleapis.com/css?family=Ubuntu' rel='stylesheet' type='text/css'>\n")
-        f.write('<style>body { font-family: "Ubuntu"; }</style>\n')
-        f.write('</head>\n')
-        f.write('<body>\n')
-        f.write(
-            '<i style="color: lightgray; font-size: 11px;">last updated on %s %s, commits %d</i>\n' % (
-                now.strftime('%B %d, %Y at %H:%M:%S'), tz_name, total_commits))
-        for fig in figures:
-            f.write(fig.to_html(full_html=False, include_plotlyjs='cdn'))
-        f.write('</body>\n')
-        f.write('</html>\n')
+        total_commits = 0
+        for source in state.sources.values():
+            if isinstance(source, RepoModel):
+                total_commits += source.commits_count
+
+        with open(out_path, 'w') as f:
+            f.write('<html>\n')
+            f.write('<head>\n')
+            f.write('<title>Repo stats</title>\n')
+            f.write("<link href='http://fonts.googleapis.com/css?family=Ubuntu' rel='stylesheet' type='text/css'>\n")
+            f.write('<style>body { font-family: "Ubuntu"; }</style>\n')
+            f.write('</head>\n')
+            f.write('<body>\n')
+            f.write(
+                f"""
+                <div style="color: lightgray; font-size: 11px; position: fixed; bottom: 10px; right: 10px;">
+                    <i>last updated on {now.strftime('%B %d, %Y at %H:%M:%S')} {tz_name}, commits {total_commits}</i>\n
+                </div>
+                """
+            )
+            for fig in figures:
+                f.write(fig.to_html(full_html=False, include_plotlyjs='cdn'))
+            f.write('</body>\n')
+            f.write('</html>\n')

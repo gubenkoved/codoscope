@@ -73,7 +73,7 @@ def ingest_git_repo(
     commits_counter = 0
 
     for branch in branches:
-        LOGGER.info(f'processing "%s"', branch)
+        LOGGER.info(f'  processing "%s"', branch)
         remote_branch = f'origin/{branch}'
 
         for commit in repo.iter_commits(remote_branch):
@@ -81,14 +81,14 @@ def ingest_git_repo(
                 continue
 
             if ingestion_limit is not None and commits_counter >= ingestion_limit:
-                LOGGER.warning('ingestion limit of %d reached', ingestion_limit)
+                LOGGER.warning('    ingestion limit of %d reached', ingestion_limit)
                 break
 
             commits_counter += 1
 
             author = '%s (%s)' % (commit.author.name, commit.author.email)
             LOGGER.debug(
-                f'  processing commit #%d: %s by "%s" at "%s"',
+                f'    processing commit #%d: %s by "%s" at "%s"',
                 commits_counter, commit.hexsha, author, commit.committed_datetime)
 
             commit_stats = commit.stats.total

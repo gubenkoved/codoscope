@@ -4,10 +4,11 @@ import logging
 import coloredlogs
 
 from codoscope.config import load_config
-from codoscope.plot import plot_all
+from codoscope.reports.base import ReportType
 from codoscope.sources.bitbucket import ingest_bitbucket
 from codoscope.sources.git import ingest_git_repo, RepoModel
 from codoscope.state import load_state, save_sate, StateModel
+from codoscope.reports.registry import REPORTS_BY_TYPE
 
 LOGGER = logging.getLogger(__name__)
 
@@ -16,7 +17,6 @@ def entrypoint():
     parser = argparse.ArgumentParser(description='Git stats')
     parser.add_argument('--config-path', type=str, help='Path to config file')
     parser.add_argument('--state-path', type=str, help='Path to the state file')
-    parser.add_argument('--out-path', type=str, help='Path to file where HTML will be written')
     parser.add_argument('--log-level', type=str, default='INFO', help='Log level')
 
     args = parser.parse_args()
@@ -30,10 +30,6 @@ def entrypoint():
     state_path = args.state_path or config.get('state-path')
     if not state_path:
         raise Exception('state-path is not defined in config or passed as argument')
-
-    out_path = args.out_path or config.get('out-path')
-    if not out_path:
-        raise Exception('out-path is not defined in config or passed as argument')
 
     state = load_state(state_path) or StateModel()
 
@@ -58,10 +54,16 @@ def entrypoint():
 
     save_sate(state_path, state)
 
-    plot_all(
-        state,
-        out_path
-    )
+    # render reports
+    for report_config in config['reports']:
+        LOGGER.info('render "%s" report', report_config['name'])
+        report_class = REPORTS_BY_TYPE.get(ReportType(report_config['type']))
+        if report_class is None:
+            raise Exception('unable to find report type "%s"', report_config['type'])
+        report_instance = report_class()
+        report_instance.generate(report_config, state)
+
+    LOGGER.info('completed!')
 
 
 if __name__ == '__main__':

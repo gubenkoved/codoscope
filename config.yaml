@@ -1,5 +1,5 @@
 state-path: state.pickle
-out-path: report.html
+
 sources:
   - name: "source1"
     type: "git"
@@ -19,3 +19,8 @@ sources:
         repositories:
           - name: repo1
           - name: repo2
+
+reports:
+  - name: overview
+    type: overview
+    out-path: overview.html
