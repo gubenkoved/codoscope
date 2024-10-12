@@ -79,13 +79,22 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
     ingestion_counter = 0
     ingestion_limit = config.get('ingestion-limit', math.inf)
 
-    def format_date(datetime: datetime.datetime) -> str:
-        utc = datetime.astimezone(pytz.utc)
-        return utc.strftime('%Y-%m-%d %H:%M')
+    myself = jira.myself()
+    my_timezone_name = myself['timeZone']
 
+    LOGGER.debug('timezone set in user profile: %s', my_timezone_name)
+    my_timezone = pytz.timezone(my_timezone_name)
+
+    def format_datetime_to_user_tz(datetime: datetime.datetime) -> str:
+        local_datetime = datetime.astimezone(my_timezone)
+        return local_datetime.strftime('%Y-%m-%d %H:%M')
+
+    # NOTE: Jira JQL API will use user's timezone to interpret the datetime here
+    # so in order to make it work properly we need to convert the datetime to
+    # that timezone
     def get_query(cutoff_date: datetime) -> str:
         if cutoff_date:
-            query = f'Updated > "{format_date(cutoff_date)}" ORDER BY Updated ASC'
+            query = f'Updated >= "{format_datetime_to_user_tz(cutoff_date)}" ORDER BY Updated ASC'
         else:
             query = 'ORDER BY Updated ASC'
         return query
@@ -117,10 +126,14 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
 
     cutoff_date = state.cutoff_date
     query = get_query(cutoff_date)
+    limit = max(10, config.get('jql-query-limit', 100))
     start = 0
 
+    # TODO: this approach is not entirely reliable since while we use paging
+    #  it is possible that some issues are updated and so when we are going to
+    #  the next page we will miss some items
     while True:
-        response = jira.jql(query, start=start)
+        response = jira.jql(query, start=start, limit=limit)
 
         if not response['issues']:
             break
