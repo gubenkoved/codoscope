@@ -2,6 +2,7 @@ import argparse
 import logging
 
 import coloredlogs
+from pandas.core.indexes.base import str_t
 
 from codoscope.config import load_config
 from codoscope.reports.base import ReportType
@@ -13,26 +14,7 @@ from codoscope.reports.registry import REPORTS_BY_TYPE
 LOGGER = logging.getLogger(__name__)
 
 
-def entrypoint():
-    parser = argparse.ArgumentParser(description='Git stats')
-    parser.add_argument('--config-path', type=str, help='Path to config file')
-    parser.add_argument('--state-path', type=str, help='Path to the state file')
-    parser.add_argument('--log-level', type=str, default='INFO', help='Log level')
-
-    args = parser.parse_args()
-
-    log_level = args.log_level.upper()
-    LOGGER.setLevel(log_level)
-    coloredlogs.install(level=log_level)
-
-    config = load_config(args.config_path)
-
-    state_path = args.state_path or config.get('state-path')
-    if not state_path:
-        raise Exception('state-path is not defined in config or passed as argument')
-
-    state = load_state(state_path) or StateModel()
-
+def ingest(config: dict, state: StateModel):
     for source_config in config['sources']:
         source_name = source_config['name']
         current_state = state.sources.get(source_name)
@@ -56,7 +38,32 @@ def entrypoint():
 
         state.sources[source_name] = source_state
 
-    save_sate(state_path, state)
+
+def entrypoint():
+    parser = argparse.ArgumentParser(description='Git stats')
+    parser.add_argument('--config-path', type=str, help='Path to config file')
+    parser.add_argument('--state-path', type=str, help='Path to the state file')
+    parser.add_argument('--log-level', type=str, default='INFO', help='Log level')
+
+    args = parser.parse_args()
+
+    log_level = args.log_level.upper()
+    LOGGER.setLevel(log_level)
+    coloredlogs.install(level=log_level)
+
+    config = load_config(args.config_path)
+
+    state_path = args.state_path or config.get('state-path')
+    if not state_path:
+        raise Exception('state-path is not defined in config or passed as argument')
+
+    state = load_state(state_path) or StateModel()
+
+    if not config.get('skip-ingestion', False):
+        ingest(config, state)
+        save_sate(state_path, state)
+    else:
+        LOGGER.warning('skipped ingestion as requested')
 
     # render reports
     for report_config in config['reports']:

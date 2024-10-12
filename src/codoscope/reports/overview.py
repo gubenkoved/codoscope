@@ -80,6 +80,7 @@ def format_minutes_offset(offset: int):
 #  and figuring out how to move BitBucket data into Git data so that they align the most?
 #  This is purely a heuristic though...
 #  ... and this should probably be a separate pre-processing step, not inherent to reports
+# TODO: separate out data extraction pipeline
 def activity_scatter(state: StateModel, filter_expr: str | None):
     data = []
     for source_name, source in state.sources.items():
@@ -180,7 +181,7 @@ def activity_scatter(state: StateModel, filter_expr: str | None):
 
     for (author, activity_type), df in grouped_df:
         name = '%s %s' % (author, activity_type)
-        trace = go.Scatter(
+        trace = go.Scattergl(
             name=name,
             showlegend=True,
             x=df['timestamp'],
