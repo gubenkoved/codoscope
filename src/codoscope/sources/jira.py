@@ -129,16 +129,11 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
     limit = max(10, config.get('jql-query-limit', 100))
     start = 0
 
-    # TODO: this approach is not entirely reliable since while we use paging
-    #  it is possible that some issues are updated and so when we are going to
-    #  the next page we will miss some items
     while True:
         response = jira.jql(query, start=start, limit=limit)
 
         if not response['issues']:
             break
-
-        start += len(response['issues'])
 
         for issue in response['issues']:
             ingestion_counter += 1
@@ -159,6 +154,24 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
             )
             state.items_map[issue['id']] = issue_model
             cutoff_date = dateutil.parser.parse(issue['fields']['updated'])
+
+        # determine next step
+        # we prefer to use cutoff based approach for the cases where it is changed
+        # after ingesting the page of results to avoid inherent issues with paging
+        # over mutable data;
+        # if after ingesting the page we still have same cutoff datetime, then
+        # use paging approach to get the next page (think of the case where there are
+        # tons of items updated during a very short period of time)
+        if query != get_query(cutoff_date):
+            # prefer cutoff approach (no paging)
+            query = get_query(cutoff_date)
+            start = 0
+        else: # use paging approach
+            start += len(response['issues'])
+            LOGGER.warning(
+                'using paging because unable to advance JQL filter by cutoff '
+                'date (most likely due to a lot of times changed in a short '
+                'period of time)')
 
         if ingestion_counter >= ingestion_limit:
             LOGGER.warning('ingestion limit of %d reached', ingestion_limit)
