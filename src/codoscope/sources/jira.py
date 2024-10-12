@@ -112,13 +112,16 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
         ]
 
     cutoff_date = state.cutoff_date
+    query = get_query(cutoff_date)
+    start = 0
 
     while True:
-        query = get_query(cutoff_date)
-        response = jira.jql(query)
+        response = jira.jql(query, start=start)
 
         if not response['issues']:
             break
+
+        start += len(response['issues'])
 
         for issue in response['issues']:
             ingestion_counter += 1
