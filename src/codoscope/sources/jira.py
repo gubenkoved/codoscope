@@ -70,6 +70,9 @@ class JiraState(SourceState):
 def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
     state = state or JiraState()
 
+    # capture the count before ingestion
+    count_before = state.items_count
+
     jira = api.Jira(
         url=config['url'],
         username=config['username'],
@@ -168,15 +171,19 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
             start = 0
         else: # use paging approach
             start += len(response['issues'])
+            # TODO: alternatively we just reached the very end of the results
+            #  how to reliably distinguish between the two?
             LOGGER.warning(
                 'using paging because unable to advance JQL filter by cutoff '
                 'date (most likely due to a lot of times changed in a short '
-                'period of time)')
+                'period of time around %s)', cutoff_date)
 
         if ingestion_counter >= ingestion_limit:
             LOGGER.warning('ingestion limit of %d reached', ingestion_limit)
             break
 
     state.cutoff_date = cutoff_date
+
+    LOGGER.info('ingested %d new items', state.items_count - count_before)
 
     return state

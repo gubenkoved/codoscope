@@ -126,8 +126,19 @@ def parse_datetime(s: str) -> Optional[datetime.datetime]:
     return datetime.datetime.strptime(s, DATETIME_FORMAT)
 
 
+def total_pr_comments_count(state: BitbucketState) -> int:
+    return sum(
+        len(pr.commentaries) for project in state.projects_map.values()
+        for repo in project.repositories_map.values()
+        for pr in repo.pull_requests_map.values()
+    )
+
+
 def ingest_bitbucket(config: dict, state: BitbucketState | None) -> BitbucketState:
     state = state or BitbucketState()
+
+    prs_count_before = state.pull_requests_count
+    prs_comments_count_before = total_pr_comments_count(state)
 
     bitbucket = api.Cloud(
         url=config['url'],
@@ -166,12 +177,6 @@ def ingest_bitbucket(config: dict, state: BitbucketState | None) -> BitbucketSta
                     q=query,
                     sort='updated_on',
             ):
-                if ingestion_counter >= ingestion_limit:
-                    LOGGER.warning('ingestion limit of %d reached', ingestion_limit)
-                    break
-
-                ingestion_counter += 1
-
                 pr_author = safe_get('author', lambda: pr.author)
                 author_name = pr_author.display_name if pr_author else None
 
@@ -216,5 +221,17 @@ def ingest_bitbucket(config: dict, state: BitbucketState | None) -> BitbucketSta
                     pr.updated_on
                 )
                 repo_state.pull_requests_map[pr.id] = pr_model
+
+                # check if we reached the ingestion limit
+                ingestion_counter += 1
+                if ingestion_counter >= ingestion_limit:
+                    LOGGER.warning('ingestion limit of %d reached', ingestion_limit)
+                    break
+
+    LOGGER.info(
+        'ingested %d new PRs and %d new PR comments',
+        state.pull_requests_count - prs_count_before,
+        total_pr_comments_count(state) - prs_comments_count_before
+    )
 
     return state

@@ -67,7 +67,7 @@ def entrypoint():
     if ingestion_config.get('enabled', True):
         ingestion_rounds = ingestion_config.get('rounds', 1)
         for round_idx in range(1, ingestion_rounds + 1):
-            LOGGER.info('start ingestion round #%d', round_idx)
+            LOGGER.info('ingestion round #%d of %d', round_idx, ingestion_rounds)
             try:
                 ingest(ingestion_config, state)
                 state.save(state_path)
