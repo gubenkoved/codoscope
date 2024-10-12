@@ -19,6 +19,8 @@ def ingest(ingestion_config: dict, state: StateModel):
         source_name = source_config['name']
         current_state = state.sources.get(source_name)
 
+        LOGGER.info('ingesting "%s" source', source_name)
+
         if not source_config.get('enabled', True):
             LOGGER.warning('skip disabled "%s" source', source_name)
             continue

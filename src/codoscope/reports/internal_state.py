@@ -70,12 +70,23 @@ class InternalStateReport(ReportBase):
                             f.write('</ul>\n')
 
                 elif isinstance(source_state, JiraState):
-                    f.write('<li>Issues count: %d</li>\n' % source_state.items_count)
                     f.write('<li>Cutoff date: %s</li>\n' % source_state.cutoff_date)
                     unique_users_count = collections.Counter(
                         x.creator.account_id for x in source_state.items_map.values()
                     )
                     f.write('<li>Unique users: %d</li>\n' % len(unique_users_count))
+                    per_type_count = collections.Counter(
+                        x.item_type for x in source_state.items_map.values()
+                    )
+                    f.write('<ul>\n')
+                    for item_type, count in per_type_count.most_common():
+                        f.write(f'<li>{item_type}: {count}</li>\n')
+                    f.write('</ul>\n')
+                    f.write('<li>Total items count: %d</li>\n' % source_state.items_count)
+                    total_comments_count = sum(
+                        len(x.comments or []) for x in source_state.items_map.values()
+                    )
+                    f.write('<li>Total comments count: %d</li>\n' % total_comments_count)
                 else:
                     raise Exception(f'Unknown source state type: {source_state}')
 
