@@ -6,6 +6,7 @@ import os.path
 
 import pandas
 import plotly.graph_objects as go
+import pytz
 import tzlocal
 
 from codoscope.common import date_time_minutes_offset
@@ -76,13 +77,20 @@ def format_minutes_offset(offset: int):
     return f'{hours:02}:{minutes:02}'
 
 
+def convert_datetime_to_timezone_inplace(data: list[dict], timezone) -> None:
+    for item in data:
+        for prop in item:
+            if isinstance(item[prop], datetime.datetime):
+                item[prop] = item[prop].astimezone(timezone)
+
+
 # TODO: we need to realign the BitBucket data
 #  following might work: find the tz offset for each user by comparing activity distributions
 #  and figuring out how to move BitBucket data into Git data so that they align the most?
 #  This is purely a heuristic though...
 #  ... and this should probably be a separate pre-processing step, not inherent to reports
 # TODO: separate out data extraction pipeline
-def activity_scatter(state: StateModel, filter_expr: str | None):
+def activity_scatter(state: StateModel, filter_expr: str | None, timezone_name: str | None):
     data = []
     for source_name, source in state.sources.items():
         if isinstance(source, RepoModel):
@@ -93,8 +101,6 @@ def activity_scatter(state: StateModel, filter_expr: str | None):
                     'source_subtype': None,
                     'activity_type': 'commit',
                     'timestamp': commit.committed_datetime,
-                    'time_of_day_minutes_offset': commit.committed_date_time_minutes_offset,
-                    'time_of_day': format_minutes_offset(commit.committed_date_time_minutes_offset),
                     'author': commit.author_name,
                     'sha': commit.hexsha,
                     'message': commit.message,
@@ -113,8 +119,6 @@ def activity_scatter(state: StateModel, filter_expr: str | None):
                             'source_subtype': 'pr',
                             'activity_type': 'pr',
                             'timestamp': pr.created_on,
-                            'time_of_day_minutes_offset': date_time_minutes_offset(pr.created_on),
-                            'time_of_day': format_minutes_offset(date_time_minutes_offset(pr.created_on)),
                             'size_class': 15,
                             'author': pr.author_name,
                         })
@@ -126,8 +130,6 @@ def activity_scatter(state: StateModel, filter_expr: str | None):
                                 'source_subtype': 'comment',
                                 'activity_type': 'pr comment',
                                 'timestamp': comment.created_on,
-                                'time_of_day_minutes_offset': date_time_minutes_offset(comment.created_on),
-                                'time_of_day': format_minutes_offset(date_time_minutes_offset(comment.created_on)),
                                 'size_class': 4 if is_answering_your_own_pr else 6,
                                 'author': comment.author_name,
                                 'is_answering_your_own_pr': is_answering_your_own_pr,
@@ -140,8 +142,6 @@ def activity_scatter(state: StateModel, filter_expr: str | None):
                     'source_subtype': item.item_type,
                     'activity_type': 'created %s' % item.item_type,
                     'timestamp': item.created_on,
-                    'time_of_day_minutes_offset': date_time_minutes_offset(item.created_on),
-                    'time_of_day': format_minutes_offset(date_time_minutes_offset(item.created_on)),
                     'size_class': 8,
                     'author': item.creator.display_name,
                 })
@@ -151,8 +151,15 @@ def activity_scatter(state: StateModel, filter_expr: str | None):
     fig = go.Figure()
 
     title = 'Overview'
+    title_extra = []
+
     if filter_expr:
-        title += ' (%s)' % filter_expr
+        title_extra.append('filtered by "%s"' % filter_expr)
+
+    if timezone_name:
+        title_extra.append('timezone normalized to "%s"' % timezone_name)
+
+    title += ' (%s)' % ', '.join(title_extra)
 
     setup_default_layout(
         fig,
@@ -171,6 +178,16 @@ def activity_scatter(state: StateModel, filter_expr: str | None):
         yaxis_title='Time of the day',
         xaxis_title='Timestamp',
     )
+
+    if timezone_name:
+        LOGGER.info('converting timestamps to timezone "%s"', timezone_name)
+        timezone = pytz.timezone(timezone_name)
+        convert_datetime_to_timezone_inplace(data, timezone)
+
+    # add time of the day fields
+    for item in data:
+        item['time_of_day_minutes_offset'] = date_time_minutes_offset(item['timestamp'])
+        item['time_of_day'] = format_minutes_offset(item['time_of_day_minutes_offset'])
 
     # sort for predictable labels order for traces
     data.sort(key=lambda x: (x['author'], x['source_type'], x['source_subtype'], x['timestamp']))
@@ -255,7 +272,7 @@ class OverviewReport(ReportBase):
         filter_expr = config.get('filter')
 
         figures = [
-            activity_scatter(state, filter_expr),
+            activity_scatter(state, filter_expr, config.get('timezone')),
         ]
 
         local_tz = tzlocal.get_localzone()

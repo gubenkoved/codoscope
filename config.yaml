@@ -36,10 +36,15 @@ reports:
     out-path: overview.html
 
   - name: overview-filtered
-    type: overview-filtered
+    type: overview
     enabled: true
     out-path: overview-filtered.html
     filter: "'John' in author"
+
+  - name: overview-tz-normalized
+    type: overview
+    timezone: "Europe/Amsterdam"
+    out-path: overview-2.html
 
   - name: internal-state
     type: internal-state
