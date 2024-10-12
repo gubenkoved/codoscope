@@ -113,12 +113,15 @@ def ingest_bitbucket(config: dict, state: BitbucketState | None) -> BitbucketSta
 
     workspace = bitbucket.workspaces.get(config['workspace'])
 
+    ingestion_limit = config.get('ingestion-limit', math.inf)
+    ingestion_counter = 0
+
     for config_project in config['projects']:
+        if ingestion_counter >= ingestion_limit:
+            break
+
         project = workspace.projects.get(config_project['name'])
         project_state = state.projects_map.setdefault(config_project['name'], ProjectModel())
-
-        ingestion_limit = config_project.get('ingestion-limit', math.inf)
-        ingestion_counter = 0
 
         for config_repo in config_project['repositories']:
             if ingestion_counter >= ingestion_limit:
