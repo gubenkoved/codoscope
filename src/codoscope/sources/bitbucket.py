@@ -67,16 +67,40 @@ class RepositoryModel:
         # ingestion cutoff date
         self.cutoff_date: datetime.datetime | None = None
 
+    @property
+    def pull_requests_count(self):
+        return len(self.pull_requests_map)
+
 
 class ProjectModel:
     def __init__(self):
         self.repositories_map: dict[str, RepositoryModel] = {}
+
+    @property
+    def repositories_count(self):
+        return len(self.repositories_map)
+
+    @property
+    def pull_requests_count(self):
+        return sum(repo.pull_requests_count for repo in self.repositories_map.values())
 
 
 class BitbucketState(SourceState):
     def __init__(self):
         super().__init__(SourceType.BITBUCKET)
         self.projects_map: dict[str, ProjectModel] = {}
+
+    @property
+    def projects_count(self):
+        return len(self.projects_map)
+
+    @property
+    def repositories_count(self):
+        return sum(project.repositories_count for project in self.projects_map.values())
+
+    @property
+    def pull_requests_count(self):
+        return sum(project.pull_requests_count for project in self.projects_map.values())
 
 
 def safe_get(what, fn, default=None):

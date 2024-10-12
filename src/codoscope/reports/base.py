@@ -6,6 +6,7 @@ from codoscope.state import StateModel
 
 class ReportType(enum.StrEnum):
     OVERVIEW = 'overview'
+    INTERNAL_STATE = 'internal-state'
 
 
 class ReportBase(abc.ABC):

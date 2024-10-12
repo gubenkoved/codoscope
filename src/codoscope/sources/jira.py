@@ -62,6 +62,10 @@ class JiraState(SourceState):
         # self.users_map: dict[str, ActorModel] = {}
         self.cutoff_date: datetime.datetime | None = None
 
+    @property
+    def items_count(self):
+        return len(self.items_map)
+
 
 def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
     state = state or JiraState()

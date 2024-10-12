@@ -40,3 +40,7 @@ reports:
     enabled: true
     out-path: overview-filtered.html
     filter: "'John' in author"
+
+  - name: internal-state
+    type: internal-state
+    out-path: internal-state.html
