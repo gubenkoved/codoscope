@@ -9,16 +9,27 @@ from codoscope.state import SourceState, SourceType
 LOGGER = logging.getLogger(__name__)
 
 
-# TODO: include changes files
-class CommitStats:
-    def __init__(self, insertions: int, deletions: int, files: int):
+class ChangedFileStatModel:
+    def __init__(self, insertions: int, deletions: int):
         self.insertions: int = insertions
         self.deletions: int = deletions
-        self.files: int = files
+
+
+class CommitStats:
+    def __init__(self, changed_files: dict[str, ChangedFileStatModel]):
+        self.changed_files: dict[str, ChangedFileStatModel] = changed_files
 
     @property
-    def changed_lines(self):
-        return self.insertions + self.deletions
+    def total_insertions(self):
+        return sum([file_stat.insertions for file_stat in self.changed_files.values()])
+
+    @property
+    def total_deletions(self):
+        return sum([file_stat.deletions for file_stat in self.changed_files.values()])
+
+    @property
+    def total_changed_lines(self):
+        return self.total_insertions + self.total_deletions
 
 
 class CommitModel:
@@ -95,7 +106,11 @@ def ingest_git_repo(
                 f'    processing commit #%d: %s by "%s" at "%s"',
                 commits_counter, commit.hexsha, author, commit.committed_datetime)
 
-            commit_stats = commit.stats.total
+            changed_files = {
+                file_name: ChangedFileStatModel(
+                    file_stat['insertions'], file_stat['deletions'])
+                for file_name, file_stat in commit.stats.files.items()
+            }
 
             commit_model = CommitModel(
                 commit.hexsha,
@@ -104,9 +119,7 @@ def ingest_git_repo(
                 commit.committed_datetime,
                 commit.message,
                 stats=CommitStats(
-                    commit_stats['insertions'],
-                    commit_stats['deletions'],
-                    commit_stats['files'],
+                    changed_files,
                 ),
                 parent_hexsha=[parent.hexsha for parent in (commit.parents or [])],
             )
