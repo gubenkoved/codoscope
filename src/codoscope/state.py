@@ -1,3 +1,4 @@
+import abc
 import datetime
 import enum
 import gzip
@@ -15,9 +16,14 @@ class SourceType(enum.StrEnum):
     JIRA = 'jira'
 
 
-class SourceState:
-    def __init__(self, source_type: SourceType):
-        self.source_type: SourceType = source_type
+class SourceState(abc.ABC):
+    def __init__(self):
+        self.created_at: datetime.datetime = datetime.datetime.now()
+
+    @property
+    @abc.abstractmethod
+    def source_type(self) -> SourceType:
+        raise NotImplementedError
 
 
 class StateModel:

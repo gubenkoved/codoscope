@@ -98,8 +98,12 @@ class ProjectModel:
 
 class BitbucketState(SourceState):
     def __init__(self):
-        super().__init__(SourceType.BITBUCKET)
+        super().__init__()
         self.projects_map: dict[str, ProjectModel] = {}
+
+    @property
+    def source_type(self) -> SourceType:
+        return SourceType.BITBUCKET
 
     @property
     def projects_count(self):

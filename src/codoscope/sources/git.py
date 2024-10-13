@@ -51,8 +51,12 @@ class CommitModel:
 
 class RepoModel(SourceState):
     def __init__(self):
-        super().__init__(SourceType.GIT)
+        super().__init__()
         self.commits_map: dict[str, CommitModel] = {}
+
+    @property
+    def source_type(self) -> SourceType:
+        return SourceType.GIT
 
     @property
     def commits_count(self):

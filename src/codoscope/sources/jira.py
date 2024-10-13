@@ -57,10 +57,14 @@ class JiraItemModel:
 
 class JiraState(SourceState):
     def __init__(self):
-        super().__init__(SourceType.JIRA)
+        super().__init__()
         self.items_map: dict[str, JiraItemModel] = {}
         # self.users_map: dict[str, ActorModel] = {}
         self.cutoff_date: datetime.datetime | None = None
+
+    @property
+    def source_type(self) -> SourceType:
+        return SourceType.JIRA
 
     @property
     def items_count(self):
