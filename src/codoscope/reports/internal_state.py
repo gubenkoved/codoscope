@@ -52,6 +52,8 @@ class InternalStateReport(ReportBase):
                 f.write(f'<h2>{state.source_name}</h1>\n')
                 f.write('<ul>\n')
                 f.write('<li>Type: %s</li>\n' % source_state.source_type.value)
+                f.write('<li>Created at: %s</li>\n' % source_state.created_at)
+                f.write('<li>Version: %d</li>\n' % source_state.version)
 
                 if isinstance(source_state, RepoModel):
                     f.write('<li>Commits count: %d</li>\n' % source_state.commits_count)
