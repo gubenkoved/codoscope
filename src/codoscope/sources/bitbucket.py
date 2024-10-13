@@ -11,21 +11,28 @@ from codoscope.state import SourceState, SourceType
 LOGGER = logging.getLogger(__name__)
 
 
+class ActorModel:
+    def __init__(self, account_id: str, display_name: str):
+        self.account_id: str = account_id
+        self.display_name: str = display_name
+
+
 class CommentModel:
     def __init__(
-            self, author_name: str | None, message: str | None,
+            self, author: ActorModel | None, message: str | None,
             created_on: datetime.datetime | None):
-        self.author_name: str | None = author_name
+        self.author: ActorModel | None = author
         self.message: str | None = message
         self.created_on: datetime.datetime | None = created_on
 
 
 class PullRequestParticipantModel:
     def __init__(
-            self, participant_name: str | None, display_name: str | None,
-            has_approved: bool | None, participated_on: datetime.datetime | None):
-        self.participant_name: str | None = participant_name
-        self.display_name: str | None = display_name
+            self,
+            participant: ActorModel | None,
+            has_approved: bool | None,
+            participated_on: datetime.datetime | None):
+        self.participant: str | None = participant
         self.has_approved: bool | None = has_approved
         self.participated_on: datetime.datetime | None = participated_on
 
@@ -35,7 +42,7 @@ class PullRequestModel:
             self,
             id: str,
             url: str,
-            author_name: str | None,
+            author: ActorModel | None,
             title: str | None,
             description: str | None,
             source_branch: str | None, destination_branch: str | None,
@@ -47,7 +54,7 @@ class PullRequestModel:
     ):
         self.id: str = id
         self.url: str = url
-        self.author_name: str | None = author_name
+        self.author: ActorModel | None = author
         self.title: str | None = title
         self.description: str | None = description
         self.source_branch: str | None = source_branch
@@ -155,6 +162,11 @@ def ingest_bitbucket(config: dict, state: BitbucketState | None) -> BitbucketSta
     ingestion_limit = config.get('ingestion-limit', math.inf)
     ingestion_counter = 0
 
+    def convert_user(user):
+        if user is None:
+            return None
+        return ActorModel(user.account_id, user.display_name)
+
     for config_project in config['projects']:
         if ingestion_counter >= ingestion_limit:
             break
@@ -185,22 +197,23 @@ def ingest_bitbucket(config: dict, state: BitbucketState | None) -> BitbucketSta
                     q=query,
                     sort='updated_on',
             ):
-                pr_author = safe_get('author', lambda: pr.author)
-                author_name = pr_author.display_name if pr_author else None
+                pr_author = safe_get('author of PR %s' % pr.url, lambda: pr.author)
+                author = convert_user(pr_author)
 
-                LOGGER.debug('  processing "%s" which is created on %s by %s', pr.url, pr.created_on, author_name or '???')
+                LOGGER.debug(
+                    '  processing "%s" which is created on %s by %s',
+                    pr.url, pr.created_on,
+                    author.display_name if author and author.display_name else '???')
 
                 repo_state.cutoff_date = pr.updated_on
 
                 pr_participants = []
                 for participant in pr.participants():
-                    participant_name = participant.user.nickname
-                    display_name = participant.user.display_name
+                    participant_actor = convert_user(participant.user)
                     has_approved = participant.has_approved
                     participated_on = participant.participated_on
                     pr_participant = PullRequestParticipantModel(
-                        participant_name,
-                        display_name,
+                        participant_actor,
                         has_approved,
                         participated_on
                     )
@@ -208,8 +221,9 @@ def ingest_bitbucket(config: dict, state: BitbucketState | None) -> BitbucketSta
 
                 pr_comments = []
                 for comment in pr.comments():
+                    comment_actor = convert_user(comment.user)
                     pr_comments.append(CommentModel(
-                        comment.user.display_name,
+                        comment_actor,
                         comment.raw,
                         dateutil.parser.parse(comment.data['created_on']),
                     ))
@@ -217,7 +231,7 @@ def ingest_bitbucket(config: dict, state: BitbucketState | None) -> BitbucketSta
                 pr_model = PullRequestModel(
                     pr.id,
                     pr.url,
-                    author_name,
+                    author,
                     pr.title,
                     pr.description,
                     pr.source_branch,

@@ -158,6 +158,11 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
             state.items_map[issue['id']] = issue_model
             cutoff_date = dateutil.parser.parse(issue['fields']['updated'])
 
+        # graceful handling for the last page w/o false-positive warnings
+        if response['total'] <= start + len(response['issues']):
+            LOGGER.info('last page of items reached')
+            break
+
         # determine next step
         # we prefer to use cutoff based approach for the cases where it is changed
         # after ingesting the page of results to avoid inherent issues with paging
@@ -169,10 +174,9 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
             # prefer cutoff approach (no paging)
             query = get_query(cutoff_date)
             start = 0
+            LOGGER.info('advancing JQL filter by cutoff date to %s', cutoff_date)
         else: # use paging approach
             start += len(response['issues'])
-            # TODO: alternatively we just reached the very end of the results
-            #  how to reliably distinguish between the two?
             LOGGER.warning(
                 'using paging because unable to advance JQL filter by cutoff '
                 'date (most likely due to a lot of times changed in a short '

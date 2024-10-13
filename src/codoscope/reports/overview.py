@@ -84,14 +84,10 @@ def convert_datetime_to_timezone_inplace(data: list[dict], timezone) -> None:
                 item[prop] = item[prop].astimezone(timezone)
 
 
-# TODO: we need to realign the BitBucket data
-#  following might work: find the tz offset for each user by comparing activity distributions
-#  and figuring out how to move BitBucket data into Git data so that they align the most?
-#  This is purely a heuristic though...
-#  ... and this should probably be a separate pre-processing step, not inherent to reports
 # TODO: separate out data extraction pipeline
 def activity_scatter(state: StateModel, filter_expr: str | None, timezone_name: str | None):
     data = []
+
     for source_name, source in state.sources.items():
         if isinstance(source, RepoModel):
             for commit in source.commits_map.values():
@@ -120,13 +116,13 @@ def activity_scatter(state: StateModel, filter_expr: str | None, timezone_name: 
                             'activity_type': 'pr',
                             'timestamp': pr.created_on,
                             'size_class': 15,
-                            'author': pr.author_name,
+                            'author': pr.author.display_name if pr.author else None,
                             'pr_title': pr.title,
                             'pr_id': pr.id,
                             'pr_url': pr.url,
                         })
                         for comment in pr.commentaries:
-                            is_answering_your_own_pr = comment.author_name == pr.author_name
+                            is_answering_your_own_pr = comment.author.account_id == pr.author.account_id
                             data.append({
                                 'source_name': source_name,
                                 'source_type': source.source_type.value,
@@ -134,7 +130,7 @@ def activity_scatter(state: StateModel, filter_expr: str | None, timezone_name: 
                                 'activity_type': 'pr comment',
                                 'timestamp': comment.created_on,
                                 'size_class': 4 if is_answering_your_own_pr else 6,
-                                'author': comment.author_name,
+                                'author': comment.author.display_name,
                                 'is_answering_your_own_pr': is_answering_your_own_pr,
                             })
         elif isinstance(source, JiraState):
