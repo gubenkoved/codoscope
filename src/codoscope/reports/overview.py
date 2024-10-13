@@ -148,6 +148,16 @@ def activity_scatter(state: StateModel, filter_expr: str | None, timezone_name: 
                     'size_class': 8,
                     'author': item.creator.display_name,
                 })
+                for comment in item.comments or []:
+                    data.append({
+                        'source_name': source_name,
+                        'source_type': source.source_type.value,
+                        'source_subtype': 'comment',
+                        'activity_type': 'jira comment',
+                        'timestamp': comment.created_on,
+                        'size_class': 4,
+                        'author': comment.created_by.display_name,
+                    })
         else:
             LOGGER.warning('skipping source "%s" of type "%s"', source_name, source.source_type)
 
