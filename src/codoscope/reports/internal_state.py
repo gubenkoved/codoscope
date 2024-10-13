@@ -1,7 +1,7 @@
+import collections
 import logging
 import os
 import os.path
-import collections
 
 from codoscope.reports.base import ReportBase, ReportType
 from codoscope.sources.bitbucket import BitbucketState

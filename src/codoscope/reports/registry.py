@@ -1,6 +1,6 @@
 from codoscope.reports.base import ReportType, ReportBase
-from codoscope.reports.overview import OverviewReport
 from codoscope.reports.internal_state import InternalStateReport
+from codoscope.reports.overview import OverviewReport
 
 REPORTS: list[type[ReportBase]] = [
     OverviewReport,
