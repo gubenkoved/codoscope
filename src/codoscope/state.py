@@ -27,7 +27,7 @@ class StateModel:
         self.created_at: datetime.datetime = datetime.datetime.now()
 
     def save(self, path: str) -> None:
-        LOGGER.info('saving state to "%s"', path)
+        LOGGER.info('saving state into "%s"', path)
         with gzip.open(path + '.tmp', 'wb') as f:
             pickle.dump(self, f)
         os.rename(path + '.tmp', path)

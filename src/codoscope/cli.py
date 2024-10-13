@@ -77,7 +77,7 @@ def entrypoint():
         LOGGER.warning('skipped ingestion as requested')
 
     # render reports
-    for report_config in config['reports']:
+    for report_config in config['reports'] or []:
         report_name = report_config['name']
 
         if not report_config.get('enabled', True):

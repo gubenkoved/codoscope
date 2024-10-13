@@ -71,6 +71,10 @@ class RepositoryModel:
     def pull_requests_count(self):
         return len(self.pull_requests_map)
 
+    @property
+    def pull_requests_comments_count(self):
+        return sum(len(pr.commentaries) for pr in self.pull_requests_map.values())
+
 
 class ProjectModel:
     def __init__(self):
@@ -155,15 +159,19 @@ def ingest_bitbucket(config: dict, state: BitbucketState | None) -> BitbucketSta
         if ingestion_counter >= ingestion_limit:
             break
 
-        project = workspace.projects.get(config_project['name'])
-        project_state = state.projects_map.setdefault(config_project['name'], ProjectModel())
+        project_name = config_project['name']
+        project = workspace.projects.get(project_name)
+        project_state = state.projects_map.setdefault(project_name, ProjectModel())
 
         for config_repo in config_project['repositories']:
             if ingestion_counter >= ingestion_limit:
                 break
 
-            repo = project.repositories.get(config_repo['name'])
-            repo_state = project_state.repositories_map.setdefault(config_repo['name'], RepositoryModel())
+            repo_name = config_repo['name']
+            LOGGER.info('ingesting repository "%s" (project "%s")', repo_name, project_name)
+
+            repo = project.repositories.get(repo_name)
+            repo_state = project_state.repositories_map.setdefault(repo_name, RepositoryModel())
 
             repo_state.crated_on = repo.created_on
             repo_state.url = repo.url

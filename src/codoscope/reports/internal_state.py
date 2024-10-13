@@ -37,10 +37,12 @@ class InternalStateReport(ReportBase):
                     margin-block-start: 0.2em;
                     margin-block-end: 0.2em;
                 }
-                h1, h2, h3 {
+                h1, h2, h3, h4 {
                     margin-block-start: 0.5em;
                     margin-block-end: 0.2em;
-                } 
+                    border-bottom: black 1px dotted;
+                    display: inline-block;
+                }
             </style>
             """)
             f.write('</head>\n')
@@ -63,10 +65,11 @@ class InternalStateReport(ReportBase):
 
                     for project_name, project in source_state.projects_map.items():
                         for repo_name, repo in project.repositories_map.items():
-                            f.write(f'<h3>{project_name} :: {repo_name}</h2>')
+                            f.write(f'<h3>{project_name} :: {repo_name}</h3>\n')
                             f.write('<ul>\n')
                             f.write('<li>Cutoff date: %s</li>\n' % repo.cutoff_date)
                             f.write('<li>PRs count: %d</li>\n' % repo.pull_requests_count)
+                            f.write('<li>PRs comments count: %d</li>\n' % repo.pull_requests_comments_count)
                             f.write('</ul>\n')
 
                 elif isinstance(source_state, JiraState):
@@ -78,15 +81,17 @@ class InternalStateReport(ReportBase):
                     per_type_count = collections.Counter(
                         x.item_type for x in source_state.items_map.values()
                     )
-                    f.write('<ul>\n')
-                    for item_type, count in per_type_count.most_common():
-                        f.write(f'<li>{item_type}: {count}</li>\n')
-                    f.write('</ul>\n')
                     f.write('<li>Total items count: %d</li>\n' % source_state.items_count)
                     total_comments_count = sum(
                         len(x.comments or []) for x in source_state.items_map.values()
                     )
                     f.write('<li>Total comments count: %d</li>\n' % total_comments_count)
+                    f.write('<li>Items count by type:</li>\n')
+                    f.write('<ul>\n')
+                    for item_type, count in per_type_count.most_common():
+                        f.write(f'<li>{item_type}: {count}</li>\n')
+                    f.write('</ul>\n')
+                    f.write('</li>\n')
                 else:
                     raise Exception(f'Unknown source state type: {source_state}')
 
