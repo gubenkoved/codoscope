@@ -121,6 +121,9 @@ def activity_scatter(state: StateModel, filter_expr: str | None, timezone_name: 
                             'timestamp': pr.created_on,
                             'size_class': 15,
                             'author': pr.author_name,
+                            'pr_title': pr.title,
+                            'pr_id': pr.id,
+                            'pr_url': pr.url,
                         })
                         for comment in pr.commentaries:
                             is_answering_your_own_pr = comment.author_name == pr.author_name
@@ -189,8 +192,13 @@ def activity_scatter(state: StateModel, filter_expr: str | None, timezone_name: 
         item['time_of_day_minutes_offset'] = date_time_minutes_offset(item['timestamp'])
         item['time_of_day'] = format_minutes_offset(item['time_of_day_minutes_offset'])
 
+    # initialize for missing authors
+    for item in data:
+        if item['author'] is None:
+            item['author'] = 'Unknown'
+
     # sort for predictable labels order for traces
-    data.sort(key=lambda x: (x['author'], x['source_type'], x['source_subtype'], x['timestamp']))
+    data.sort(key=lambda x: (x['author'], x['source_type'], x['source_subtype'] or '', x['timestamp']))
 
     # apply filters if applicable
     if filter_expr:
