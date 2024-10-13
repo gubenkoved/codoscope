@@ -5,6 +5,7 @@ import os
 import os.path
 
 import pandas
+import pandas as pd
 import plotly.graph_objects as go
 import pytz
 import tzlocal
@@ -53,7 +54,7 @@ def setup_default_layout(fig, title=None):
     fig.update_layout(
         hoverlabel=dict(
             font_size=12,
-            font_family="Ubuntu"
+            font_family="Ubuntu",
         )
     )
 
@@ -127,11 +128,14 @@ def activity_scatter(state: StateModel, filter_expr: str | None, timezone_name: 
                             data.append({
                                 'source_name': source_name,
                                 'source_type': source.source_type.value,
-                                'source_subtype': 'approved',
+                                'source_subtype': 'approved pr',
                                 'activity_type': 'approved pr',
                                 'timestamp': participant.participated_on,
                                 'size_class': 8,
                                 'author': participant.user.display_name,
+                                'pr_title': pr.title,
+                                'pr_id': pr.id,
+                                'pr_url': pr.url,
                             })
                         for comment in pr.commentaries:
                             is_answering_your_own_pr = (
@@ -148,6 +152,9 @@ def activity_scatter(state: StateModel, filter_expr: str | None, timezone_name: 
                                 'size_class': 4 if is_answering_your_own_pr else 6,
                                 'author': comment.author.display_name,
                                 'is_answering_your_own_pr': is_answering_your_own_pr,
+                                'pr_title': pr.title,
+                                'pr_id': pr.id,
+                                'pr_url': pr.url,
                             })
         elif isinstance(source, JiraState):
             for item in source.items_map.values():
@@ -159,6 +166,7 @@ def activity_scatter(state: StateModel, filter_expr: str | None, timezone_name: 
                     'timestamp': item.created_on,
                     'size_class': 8,
                     'author': item.creator.display_name,
+                    'item_key': item.key,
                 })
                 for comment in item.comments or []:
                     data.append({
@@ -169,6 +177,7 @@ def activity_scatter(state: StateModel, filter_expr: str | None, timezone_name: 
                         'timestamp': comment.created_on,
                         'size_class': 4,
                         'author': comment.created_by.display_name,
+                        'item_key': item.key,
                     })
         else:
             LOGGER.warning('skipping source "%s" of type "%s"', source_name, source.source_type)
@@ -184,7 +193,8 @@ def activity_scatter(state: StateModel, filter_expr: str | None, timezone_name: 
     if timezone_name:
         title_extra.append('timezone normalized to "%s"' % timezone_name)
 
-    title += ' (%s)' % ', '.join(title_extra)
+    if title_extra:
+        title += ' (%s)' % ', '.join(title_extra)
 
     setup_default_layout(
         fig,
@@ -195,12 +205,11 @@ def activity_scatter(state: StateModel, filter_expr: str | None, timezone_name: 
 
     fig.update_layout(
         yaxis=dict(
-            title='Time of Day',
+            title='Time',
             tickmode='array',
             tickvals=tickvals,
             ticktext=ticktext,
         ),
-        yaxis_title='Time of the day',
         xaxis_title='Timestamp',
     )
 
@@ -213,6 +222,7 @@ def activity_scatter(state: StateModel, filter_expr: str | None, timezone_name: 
     for item in data:
         item['time_of_day_minutes_offset'] = date_time_minutes_offset(item['timestamp'])
         item['time_of_day'] = format_minutes_offset(item['time_of_day_minutes_offset'])
+        # item['timestamp'] = item['timestamp'].date()
 
     # initialize for missing authors
     for item in data:
@@ -242,46 +252,41 @@ def activity_scatter(state: StateModel, filter_expr: str | None, timezone_name: 
 
     LOGGER.info('groups count: %s', grouped_df.ngroups)
 
+    hover_data_columns = [
+        'sha',
+        'pr_title',
+        'item_key',
+    ]
+
     for (author, activity_type), df in grouped_df:
         name = '%s %s' % (author, activity_type)
+
+        # compose hover texts all the fields
+        texts = []
+        for row in df.itertuples():
+            text_item = f'<b>{row.source_name}</b><br>'
+            for col in hover_data_columns:
+                col_val = getattr(row, col, None)
+                if col_val and not pd.isna(col_val):
+                    text_item += '%s<br>' % col_val
+            texts.append(text_item)
+
         trace = go.Scattergl(
             name=name,
             showlegend=True,
             x=df['timestamp'],
             y=df['time_of_day_minutes_offset'],
             mode='markers',
-            # TODO: handle it
-            # hover_data=['source', 'timestamp', 'time_of_day', 'author', 'sha', 'changed_lines', 'changed_files', 'message_first_line'],
+            text=texts,
+            hovertemplate='%{x}<br>%{text}',
             opacity=0.9,
             marker=dict(
                 size=df['size_class'],
-                # TODO: do we even need it given there will be a color per trace?
-                # color=df['author']
             ),
         )
         fig.add_trace(trace)
 
     return fig
-
-
-def plot_commits_by_date(repo_model: RepoModel):
-    pass
-
-
-def commit_size_per_author(repo_model: RepoModel):
-    # TODO: boxplot
-    pass
-
-
-def commits_by_time_of_day(repo_model: RepoModel):
-    pass
-
-
-# TODO: for each user we can show what he or she mostly changes?
-#  Can summarize by (path, count) limiting amount of items for any given parent by some threshold
-#  if crossed summarize by parent's parent and so on
-def mostly_changed_places(repo_model: RepoModel):
-    pass
 
 
 def filter(data: list[dict], expr: str):
@@ -313,18 +318,23 @@ class OverviewReport(ReportBase):
             f.write('<html>\n')
             f.write('<head>\n')
             f.write('<title>codoscope :: overview</title>\n')
-            f.write("<link href='http://fonts.googleapis.com/css?family=Ubuntu' rel='stylesheet' type='text/css'>\n")
+            f.write("""
+                <link rel="preconnect" href="https://fonts.googleapis.com">
+                <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+                <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
+                <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400;1,700&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
+            """)
             f.write('<style>body { font-family: "Ubuntu"; }</style>\n')
             f.write('</head>\n')
             f.write('<body>\n')
+            for fig in figures:
+                f.write(fig.to_html(full_html=False, include_plotlyjs='cdn'))
             f.write(
                 f"""
-                <div style="color: lightgray; font-size: 11px; position: fixed; bottom: 10px; right: 10px;">
+                <div style="color: lightgray; font-size: 11px; text-align: right;">
                     <i>last updated on {now.strftime('%B %d, %Y at %H:%M:%S')} {tz_name}</i>\n
                 </div>
                 """
             )
-            for fig in figures:
-                f.write(fig.to_html(full_html=False, include_plotlyjs='cdn'))
             f.write('</body>\n')
             f.write('</html>\n')
