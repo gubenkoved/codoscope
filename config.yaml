@@ -8,8 +8,10 @@ ingestion:
       enabled: true
       path: ~/src/repo
       ingestion-limit: 100
+      remote: origin
       branches:
         - master
+        - release-*
 
     - name: "source2"
       type: "bitbucket"

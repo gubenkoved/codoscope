@@ -28,15 +28,22 @@ def ingest(ingestion_config: dict, state: StateModel):
         if source_config['type'] == 'git':
             assert current_state is None or isinstance(current_state, RepoModel)
             source_state = ingest_git_repo(
+                source_config,
                 current_state,
                 source_config['path'],
                 source_config['branches'],
                 source_config.get('ingestion-limit'),
             )
         elif source_config['type'] == 'bitbucket':
-            source_state = ingest_bitbucket(source_config, current_state)
+            source_state = ingest_bitbucket(
+                source_config,
+                current_state,
+            )
         elif source_config['type'] == 'jira':
-            source_state = ingest_jira(source_config, current_state)
+            source_state = ingest_jira(
+                source_config,
+                current_state,
+            )
         else:
             raise Exception(f'Unknown source type: {source_config["type"]}')
 

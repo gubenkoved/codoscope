@@ -1,5 +1,7 @@
 import datetime
+import fnmatch
 import logging
+import math
 
 import git
 
@@ -74,27 +76,48 @@ class RepoModel(SourceState):
         return len(self.commits_map)
 
 
-# TODO: support for all origin branches
 def ingest_git_repo(
-        repo_state: RepoModel | None, path: str,
-        branches: list[str] = None, ingestion_limit: int | None = None) -> RepoModel:
+        config: dict,
+        repo_state: RepoModel | None,
+        path: str,
+        branches: list[str] = None,
+        ingestion_limit: int | None = None) -> RepoModel:
     repo_state = repo_state or RepoModel()
 
     repo = git.Repo(path)
+    remote_name = config.get('remote', 'origin')
+    remote = repo.remote(remote_name)
 
     LOGGER.info(f'fetching repo...')
-    repo.remotes.origin.fetch()
+    remote.fetch()
 
     commits_counter = 0
-    for branch in branches:
-        LOGGER.info(f'processing "%s"', branch)
-        remote_branch = f'origin/{branch}'
 
-        for commit in repo.iter_commits(remote_branch):
+    if branches is None:
+        branches = ['master', 'main']
+
+    def is_matching_filters(ref):
+        for branch in branches:
+            if fnmatch.fnmatch(ref.path, f'refs/remotes/{remote_name}/{branch}'):
+                return True
+        return False
+
+    ingestion_limit = ingestion_limit or math.inf
+
+    for ref in remote.refs:
+        if commits_counter >= ingestion_limit:
+            break
+
+        if not is_matching_filters(ref):
+            continue
+
+        LOGGER.info(f'processing "%s"', ref.path)
+
+        for commit in repo.iter_commits(ref):
             if commit.hexsha in repo_state.commits_map:
                 continue
 
-            if ingestion_limit is not None and commits_counter >= ingestion_limit:
+            if commits_counter >= ingestion_limit:
                 LOGGER.warning('  ingestion limit of %d reached', ingestion_limit)
                 break
 
