@@ -74,6 +74,7 @@ class RepoModel(SourceState):
         return len(self.commits_map)
 
 
+# TODO: support for all origin branches
 def ingest_git_repo(
         repo_state: RepoModel | None, path: str,
         branches: list[str] = None, ingestion_limit: int | None = None) -> RepoModel:
@@ -84,11 +85,9 @@ def ingest_git_repo(
     LOGGER.info(f'fetching repo...')
     repo.remotes.origin.fetch()
 
-    LOGGER.info(f'iterating branches...')
     commits_counter = 0
-
     for branch in branches:
-        LOGGER.info(f'  processing "%s"', branch)
+        LOGGER.info(f'processing "%s"', branch)
         remote_branch = f'origin/{branch}'
 
         for commit in repo.iter_commits(remote_branch):
@@ -96,14 +95,14 @@ def ingest_git_repo(
                 continue
 
             if ingestion_limit is not None and commits_counter >= ingestion_limit:
-                LOGGER.warning('    ingestion limit of %d reached', ingestion_limit)
+                LOGGER.warning('  ingestion limit of %d reached', ingestion_limit)
                 break
 
             commits_counter += 1
 
             author = '%s (%s)' % (commit.author.name, commit.author.email)
             LOGGER.debug(
-                f'    processing commit #%d: %s by "%s" at "%s"',
+                f'  processing commit #%d: %s by "%s" at "%s"',
                 commits_counter, commit.hexsha, author, commit.committed_datetime)
 
             changed_files = {
@@ -125,6 +124,9 @@ def ingest_git_repo(
             )
             repo_state.commits_map[commit.hexsha] = commit_model
 
-    LOGGER.info(f'ingested commits: %d', commits_counter)
+            if commits_counter % 1000 == 0:
+                LOGGER.info(f'  ingested %d commits', commits_counter)
+
+    LOGGER.info(f'ingested %d new commits', commits_counter)
 
     return repo_state

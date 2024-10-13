@@ -36,11 +36,6 @@ class PullRequestParticipantModel:
         self.has_approved: bool | None = has_approved
         self.participated_on: datetime.datetime | None = participated_on
 
-    # FIXME: temporary
-    def __setstate__(self, state):
-        self.__dict__.update(state)
-        self.__dict__['user'] = state['participant']
-
 
 class PullRequestModel:
     def __init__(

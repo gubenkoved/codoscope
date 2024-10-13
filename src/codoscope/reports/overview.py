@@ -101,9 +101,9 @@ def activity_scatter(state: StateModel, filter_expr: str | None, timezone_name: 
                     'sha': commit.hexsha,
                     'message': commit.message,
                     'message_first_line': commit.message.split('\n')[0],
-                    'changed_lines': commit.stats.changed_lines,
-                    'size_class': max(5.0, min(20.0, 5 + 3 * math.log(commit.stats.changed_lines + 1, 10))),
-                    'changed_files': commit.stats.files,
+                    'changed_lines': commit.stats.total_changed_lines,
+                    'size_class': max(5.0, min(20.0, 5 + 3 * math.log(commit.stats.total_changed_lines + 1, 10))),
+                    'changed_files': list(commit.stats.changed_files),
                 })
         elif isinstance(source, BitbucketState):
             for project_name, project in source.projects_map.items():
