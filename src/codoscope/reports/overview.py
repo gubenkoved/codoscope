@@ -122,7 +122,11 @@ def activity_scatter(state: StateModel, filter_expr: str | None, timezone_name: 
                             'pr_url': pr.url,
                         })
                         for comment in pr.commentaries:
-                            is_answering_your_own_pr = comment.author.account_id == pr.author.account_id
+                            is_answering_your_own_pr = (
+                                comment.author and
+                                pr.author and
+                                comment.author.account_id == pr.author.account_id
+                            )
                             data.append({
                                 'source_name': source_name,
                                 'source_type': source.source_type.value,
