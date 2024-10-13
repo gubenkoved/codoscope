@@ -169,7 +169,7 @@ def ingest_bitbucket(config: dict, state: BitbucketState | None) -> BitbucketSta
             repo_state.url = repo.url
 
             # by default only open PRs are returned
-            query = 'state="MERGED"'
+            query = '(state="MERGED" or state="OPEN" or state="DECLINED" or state="SUPERSEDED")'
             if repo_state.cutoff_date:
                 query += ' and updated_on > %s' % format_datetime(repo_state.cutoff_date)
 
