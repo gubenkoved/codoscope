@@ -121,6 +121,18 @@ def activity_scatter(state: StateModel, filter_expr: str | None, timezone_name: 
                             'pr_id': pr.id,
                             'pr_url': pr.url,
                         })
+                        for participant in pr.participants or []:
+                            if not participant.has_approved:
+                                continue
+                            data.append({
+                                'source_name': source_name,
+                                'source_type': source.source_type.value,
+                                'source_subtype': 'approved',
+                                'activity_type': 'approved pr',
+                                'timestamp': participant.participated_on,
+                                'size_class': 8,
+                                'author': participant.user.display_name,
+                            })
                         for comment in pr.commentaries:
                             is_answering_your_own_pr = (
                                 comment.author and

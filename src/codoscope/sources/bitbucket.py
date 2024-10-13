@@ -29,12 +29,17 @@ class CommentModel:
 class PullRequestParticipantModel:
     def __init__(
             self,
-            participant: ActorModel | None,
+            user: ActorModel | None,
             has_approved: bool | None,
             participated_on: datetime.datetime | None):
-        self.participant: str | None = participant
+        self.user: ActorModel | None = user
         self.has_approved: bool | None = has_approved
         self.participated_on: datetime.datetime | None = participated_on
+
+    # FIXME: temporary
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self.__dict__['user'] = state['participant']
 
 
 class PullRequestModel:
@@ -253,6 +258,8 @@ def ingest_bitbucket(config: dict, state: BitbucketState | None) -> BitbucketSta
                 if ingestion_counter >= ingestion_limit:
                     LOGGER.warning('ingestion limit of %d reached', ingestion_limit)
                     break
+                if ingestion_counter % 100 == 0:
+                    LOGGER.info('  ingested %d PRs', ingestion_counter)
 
     LOGGER.info(
         'ingested %d new PRs and %d new PR comments',
