@@ -8,6 +8,7 @@ from codoscope.sources.bitbucket import BitbucketState
 from codoscope.sources.git import RepoModel
 from codoscope.sources.jira import JiraState
 from codoscope.state import StateModel
+from codoscope.datasets import Datasets
 
 LOGGER = logging.getLogger(__name__)
 
@@ -17,7 +18,7 @@ class InternalStateReport(ReportBase):
     def get_type(cls) -> ReportType:
         return ReportType.INTERNAL_STATE
 
-    def generate(self, config: dict, state: StateModel):
+    def generate(self, config: dict, state: StateModel, datasets: Datasets):
         out_path = os.path.abspath(config['out-path'])
         if not os.path.exists(os.path.dirname(out_path)):
             os.makedirs(os.path.dirname(out_path))

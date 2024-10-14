@@ -2,6 +2,7 @@ import abc
 import enum
 
 from codoscope.state import StateModel
+from codoscope.datasets import Datasets
 
 
 class ReportType(enum.StrEnum):
@@ -11,7 +12,7 @@ class ReportType(enum.StrEnum):
 
 class ReportBase(abc.ABC):
     @abc.abstractmethod
-    def generate(self, config: dict, state: StateModel) -> None:
+    def generate(self, config: dict, state: StateModel, datasets: Datasets) -> None:
         raise NotImplementedError
 
     # TODO: define class property

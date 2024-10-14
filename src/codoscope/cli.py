@@ -1,5 +1,6 @@
 import argparse
 import logging
+from dataclasses import dataclass
 
 import coloredlogs
 
@@ -10,6 +11,7 @@ from codoscope.sources.bitbucket import ingest_bitbucket
 from codoscope.sources.git import ingest_git_repo, RepoModel
 from codoscope.sources.jira import ingest_jira
 from codoscope.state import StateModel
+from codoscope.datasets import Datasets
 
 LOGGER = logging.getLogger(__name__)
 
@@ -83,6 +85,11 @@ def entrypoint():
     else:
         LOGGER.warning('skipped ingestion as requested')
 
+    # extract data sets from the state
+    datasets = Datasets(state)
+    datasets.extract()
+    LOGGER.info('datasets extraction completed')
+
     # render reports
     for report_config in config['reports'] or []:
         report_name = report_config['name']
@@ -98,7 +105,7 @@ def entrypoint():
             raise Exception('unable to find report type "%s"', report_config['type'])
 
         report_instance = report_class()
-        report_instance.generate(report_config, state)
+        report_instance.generate(report_config, state, datasets)
 
     LOGGER.info('completed!')
 

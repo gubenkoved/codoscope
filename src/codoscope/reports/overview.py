@@ -9,6 +9,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import pytz
 import tzlocal
+from pandas.core.interchange.dataframe_protocol import DataFrame
 
 from codoscope.common import date_time_minutes_offset
 from codoscope.reports.base import ReportBase, ReportType
@@ -16,6 +17,7 @@ from codoscope.sources.bitbucket import BitbucketState
 from codoscope.sources.git import RepoModel
 from codoscope.sources.jira import JiraState
 from codoscope.state import StateModel
+from codoscope.datasets import Datasets
 
 LOGGER = logging.getLogger(__name__)
 
@@ -85,103 +87,7 @@ def convert_datetime_to_timezone_inplace(data: list[dict], timezone) -> None:
                 item[prop] = item[prop].astimezone(timezone)
 
 
-# TODO: separate out data extraction pipeline
-def activity_scatter(state: StateModel, filter_expr: str | None, timezone_name: str | None):
-    data = []
-
-    for source_name, source in state.sources.items():
-        if isinstance(source, RepoModel):
-            for commit in source.commits_map.values():
-                data.append({
-                    'source_name': source_name,
-                    'source_type': source.source_type.value,
-                    'source_subtype': None,
-                    'activity_type': 'commit',
-                    'timestamp': commit.committed_datetime,
-                    'author': commit.author_name,
-                    'sha': commit.hexsha,
-                    'message': commit.message,
-                    'message_first_line': commit.message.split('\n')[0],
-                    'changed_lines': commit.stats.total_changed_lines,
-                    'size_class': max(5.0, min(20.0, 5 + 3 * math.log(commit.stats.total_changed_lines + 1, 10))),
-                    'changed_files': list(commit.stats.changed_files),
-                })
-        elif isinstance(source, BitbucketState):
-            for project_name, project in source.projects_map.items():
-                for repo_name, repo in project.repositories_map.items():
-                    for pr_name, pr in repo.pull_requests_map.items():
-                        data.append({
-                            'source_name': source_name,
-                            'source_type': source.source_type.value,
-                            'source_subtype': 'pr',
-                            'activity_type': 'pr',
-                            'timestamp': pr.created_on,
-                            'size_class': 15,
-                            'author': pr.author.display_name if pr.author else None,
-                            'pr_title': pr.title,
-                            'pr_id': pr.id,
-                            'pr_url': pr.url,
-                        })
-                        for participant in pr.participants or []:
-                            if not participant.has_approved:
-                                continue
-                            data.append({
-                                'source_name': source_name,
-                                'source_type': source.source_type.value,
-                                'source_subtype': 'approved pr',
-                                'activity_type': 'approved pr',
-                                'timestamp': participant.participated_on,
-                                'size_class': 8,
-                                'author': participant.user.display_name,
-                                'pr_title': pr.title,
-                                'pr_id': pr.id,
-                                'pr_url': pr.url,
-                            })
-                        for comment in pr.commentaries:
-                            is_answering_your_own_pr = (
-                                comment.author and
-                                pr.author and
-                                comment.author.account_id == pr.author.account_id
-                            )
-                            data.append({
-                                'source_name': source_name,
-                                'source_type': source.source_type.value,
-                                'source_subtype': 'comment',
-                                'activity_type': 'pr comment',
-                                'timestamp': comment.created_on,
-                                'size_class': 4 if is_answering_your_own_pr else 6,
-                                'author': comment.author.display_name,
-                                'is_answering_your_own_pr': is_answering_your_own_pr,
-                                'pr_title': pr.title,
-                                'pr_id': pr.id,
-                                'pr_url': pr.url,
-                            })
-        elif isinstance(source, JiraState):
-            for item in source.items_map.values():
-                data.append({
-                    'source_name': source_name,
-                    'source_type': source.source_type.value,
-                    'source_subtype': item.item_type,
-                    'activity_type': 'created %s' % item.item_type,
-                    'timestamp': item.created_on,
-                    'size_class': 8,
-                    'author': item.creator.display_name,
-                    'item_key': item.key,
-                })
-                for comment in item.comments or []:
-                    data.append({
-                        'source_name': source_name,
-                        'source_type': source.source_type.value,
-                        'source_subtype': 'comment',
-                        'activity_type': 'jira comment',
-                        'timestamp': comment.created_on,
-                        'size_class': 4,
-                        'author': comment.created_by.display_name,
-                        'item_key': item.key,
-                    })
-        else:
-            LOGGER.warning('skipping source "%s" of type "%s"', source_name, source.source_type)
-
+def activity_scatter(activity_data: list[dict], filter_expr: str | None, timezone_name: str | None):
     fig = go.Figure()
 
     title = 'Overview'
@@ -216,36 +122,36 @@ def activity_scatter(state: StateModel, filter_expr: str | None, timezone_name: 
     if timezone_name:
         LOGGER.info('converting timestamps to timezone "%s"', timezone_name)
         timezone = pytz.timezone(timezone_name)
-        convert_datetime_to_timezone_inplace(data, timezone)
+        convert_datetime_to_timezone_inplace(activity_data, timezone)
 
     # add time of the day fields
-    for item in data:
+    for item in activity_data:
         item['time_of_day_minutes_offset'] = date_time_minutes_offset(item['timestamp'])
         item['time_of_day'] = format_minutes_offset(item['time_of_day_minutes_offset'])
-        # item['timestamp'] = item['timestamp'].date()
 
     # initialize for missing authors
-    for item in data:
+    for item in activity_data:
         if item['author'] is None:
             item['author'] = 'Unknown'
 
     # sort for predictable labels order for traces
-    data.sort(key=lambda x: (x['author'], x['source_type'], x['source_subtype'] or '', x['timestamp']))
+    activity_data.sort(
+        key=lambda x: (x['author'], x['source_type'], x['source_subtype'] or '', x['timestamp']))
 
     # apply filters if applicable
     if filter_expr:
-        count_before_filter = len(data)
-        data = filter(data, filter_expr)
+        count_before_filter = len(activity_data)
+        data = filter(activity_data, filter_expr)
         count_after_filter = len(data)
         LOGGER.info('filter "%s" left %d of %d data points', filter_expr, count_after_filter, count_before_filter)
 
-    LOGGER.info('data points to render: %d', len(data))
+    LOGGER.info('data points to render: %d', len(activity_data))
 
-    if len(data) == 0:
+    if len(activity_data) == 0:
         LOGGER.warning('no data to show')
         return fig
 
-    complete_df = pandas.DataFrame(data)
+    complete_df = pandas.DataFrame(activity_data)
     complete_df['source_subtype'] = complete_df['source_subtype'].fillna('')
 
     grouped_df = complete_df.groupby(['author', 'activity_type'])
@@ -299,7 +205,7 @@ class OverviewReport(ReportBase):
     def get_type(cls) -> ReportType:
         return ReportType.OVERVIEW
 
-    def generate(self, config: dict, state: StateModel):
+    def generate(self, config: dict, state: StateModel, datasets: Datasets):
         out_path = os.path.abspath(config['out-path'])
         if not os.path.exists(os.path.dirname(out_path)):
             os.makedirs(os.path.dirname(out_path))
@@ -307,7 +213,7 @@ class OverviewReport(ReportBase):
         filter_expr = config.get('filter')
 
         figures = [
-            activity_scatter(state, filter_expr, config.get('timezone')),
+            activity_scatter(datasets.activity, filter_expr, config.get('timezone')),
         ]
 
         local_tz = tzlocal.get_localzone()
