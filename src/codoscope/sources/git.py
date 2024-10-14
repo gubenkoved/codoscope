@@ -41,6 +41,7 @@ class CommitModel:
             author_name: str,
             author_email: str,
             committed_datetime: datetime.datetime,
+            authored_datetime: datetime.datetime,
             message: str,
             stats: CommitStats,
             parent_hexsha: list[str],
@@ -49,6 +50,7 @@ class CommitModel:
         self.author_name: str = author_name
         self.author_email: str = author_email
         self.committed_datetime: datetime.datetime = committed_datetime
+        self.authored_datetime: datetime.datetime = authored_datetime
         self.message: str = message
         self.stats: CommitStats = stats
         self.parent_hexsha: list[str] = parent_hexsha
@@ -139,6 +141,7 @@ def ingest_git_repo(
                 commit.author.name,
                 commit.author.email,
                 commit.committed_datetime,
+                commit.authored_datetime,
                 commit.message,
                 stats=CommitStats(
                     changed_files,
