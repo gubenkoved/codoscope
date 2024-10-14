@@ -37,6 +37,7 @@ class JiraItemModel:
             assignee: ActorModel | None,
             reporter: ActorModel | None,
             components: list[str] | None,
+            labels: list[str] | None,
             comments: list[JiraCommentModel] | None,
             created_on: datetime.datetime,
             updated_on: datetime.datetime | None):
@@ -50,6 +51,7 @@ class JiraItemModel:
         self.assignee: ActorModel | None = assignee
         self.reporter: ActorModel | None = reporter
         self.components: list[str] | None = components
+        self.labels: list[str] | None = labels
         self.comments: list[JiraCommentModel] | None = comments
         self.created_on: datetime.datetime | None = created_on
         self.updated_on: datetime.datetime | None = updated_on
@@ -70,12 +72,17 @@ class JiraState(SourceState):
     def items_count(self):
         return len(self.items_map)
 
+    @property
+    def total_comments_count(self):
+        return sum(len(x.comments or []) for x in self.items_map.values())
+
 
 def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
     state = state or JiraState()
 
     # capture the count before ingestion
     count_before = state.items_count
+    count_comments_before = state.total_comments_count
 
     jira = api.Jira(
         url=config['url'],
@@ -144,20 +151,22 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
 
         for issue in response['issues']:
             ingestion_counter += 1
+            fields = issue['fields']
             issue_model = JiraItemModel(
                 issue['id'],
                 issue['key'],
-                issue['fields']['issuetype']['name'],
-                issue['fields']['summary'],
-                issue['fields']['status']['name'],
-                issue['fields']['status']['statusCategory']['name'],
-                convert_actor(issue['fields']['creator']),
-                convert_actor(issue['fields'].get('assignee')),
-                convert_actor(issue['fields'].get('reporter')),
-                convert_components(issue['fields'].get('components')),
-                convert_comments(issue['fields'].get('comment', {}).get('comments')),
-                dateutil.parser.parse(issue['fields']['created']),
-                dateutil.parser.parse(issue['fields']['updated']),
+                fields['issuetype']['name'],
+                fields['summary'],
+                fields['status']['name'],
+                fields['status']['statusCategory']['name'],
+                convert_actor(fields['creator']),
+                convert_actor(fields.get('assignee')),
+                convert_actor(fields.get('reporter')),
+                convert_components(fields.get('components')),
+                fields.get('labels'),
+                convert_comments(fields.get('comment', {}).get('comments')),
+                dateutil.parser.parse(fields['created']),
+                dateutil.parser.parse(fields['updated']),
             )
             state.items_map[issue['id']] = issue_model
             cutoff_date = dateutil.parser.parse(issue['fields']['updated'])
@@ -192,6 +201,10 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
 
     state.cutoff_date = cutoff_date
 
-    LOGGER.info('ingested %d new items', state.items_count - count_before)
+    LOGGER.info(
+        'ingested %d new items, %d new comments',
+        state.items_count - count_before,
+        state.total_comments_count - count_comments_before,
+    )
 
     return state
