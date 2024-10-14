@@ -1,17 +1,17 @@
 import argparse
 import logging
-from dataclasses import dataclass
 
 import coloredlogs
 
 from codoscope.config import load_config
+from codoscope.datasets import Datasets
+from codoscope.processors.remap_users import RemapUsersProcessor
 from codoscope.reports.base import ReportType
 from codoscope.reports.registry import REPORTS_BY_TYPE
 from codoscope.sources.bitbucket import ingest_bitbucket
 from codoscope.sources.git import ingest_git_repo, RepoModel
 from codoscope.sources.jira import ingest_jira
 from codoscope.state import StateModel
-from codoscope.datasets import Datasets
 
 LOGGER = logging.getLogger(__name__)
 
@@ -90,8 +90,19 @@ def entrypoint():
     datasets.extract()
     LOGGER.info('datasets extraction completed')
 
+    # TODO: make it more generic instead of dependency of specific named dataset
+    for processor_config in config.get('processors', []):
+        processor_name = processor_config['name']
+        processor_type = processor_config['type']
+        LOGGER.info('handling "%s" processor', processor_name)
+        if processor_type == 'remap-users':
+            processor = RemapUsersProcessor(processor_config)
+            processor.execute(datasets.activity)
+        else:
+            raise Exception('unknown processor type: "%s"' % processor_type)
+
     # render reports
-    for report_config in config['reports'] or []:
+    for report_config in config.get('reports', []):
         report_name = report_config['name']
 
         if not report_config.get('enabled', True):

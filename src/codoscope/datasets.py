@@ -31,6 +31,7 @@ def extract_activity(state: StateModel) -> list[dict]:
                     'activity_type': 'commit',
                     'timestamp': commit.committed_datetime,
                     'author': commit.author_name,
+                    'author_email': commit.author_email,
                     'sha': commit.hexsha,
                     'message': commit.message,
                     'message_first_line': commit.message.split('\n')[0],
@@ -98,6 +99,7 @@ def extract_activity(state: StateModel) -> list[dict]:
                     'timestamp': item.created_on,
                     'size_class': 8,
                     'author': item.creator.display_name,
+                    'author_email': item.creator.email,
                     'item_key': item.key,
                 })
                 for comment in item.comments or []:
@@ -109,6 +111,7 @@ def extract_activity(state: StateModel) -> list[dict]:
                         'timestamp': comment.created_on,
                         'size_class': 4,
                         'author': comment.created_by.display_name,
+                        'author_email': comment.created_by.email,
                         'item_key': item.key,
                     })
         else:

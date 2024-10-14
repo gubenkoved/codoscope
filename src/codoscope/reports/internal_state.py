@@ -3,12 +3,12 @@ import logging
 import os
 import os.path
 
+from codoscope.datasets import Datasets
 from codoscope.reports.base import ReportBase, ReportType
 from codoscope.sources.bitbucket import BitbucketState
 from codoscope.sources.git import RepoModel
 from codoscope.sources.jira import JiraState
 from codoscope.state import StateModel
-from codoscope.datasets import Datasets
 
 LOGGER = logging.getLogger(__name__)
 

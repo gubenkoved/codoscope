@@ -1,8 +1,8 @@
 import abc
 import enum
 
-from codoscope.state import StateModel
 from codoscope.datasets import Datasets
+from codoscope.state import StateModel
 
 
 class ReportType(enum.StrEnum):

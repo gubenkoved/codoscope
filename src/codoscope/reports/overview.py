@@ -1,6 +1,5 @@
 import datetime
 import logging
-import math
 import os
 import os.path
 
@@ -9,15 +8,11 @@ import pandas as pd
 import plotly.graph_objects as go
 import pytz
 import tzlocal
-from pandas.core.interchange.dataframe_protocol import DataFrame
 
 from codoscope.common import date_time_minutes_offset
-from codoscope.reports.base import ReportBase, ReportType
-from codoscope.sources.bitbucket import BitbucketState
-from codoscope.sources.git import RepoModel
-from codoscope.sources.jira import JiraState
-from codoscope.state import StateModel
 from codoscope.datasets import Datasets
+from codoscope.reports.base import ReportBase, ReportType
+from codoscope.state import StateModel
 
 LOGGER = logging.getLogger(__name__)
 
