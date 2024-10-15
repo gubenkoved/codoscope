@@ -187,10 +187,19 @@ def ingest_bitbucket(config: dict, state: BitbucketState | None) -> BitbucketSta
             repo_state.crated_on = repo.created_on
             repo_state.url = repo.url
 
+            cutoff_date = repo_state.cutoff_date
+
+            if config.get('cutoff-date'):
+                # YAML has built-in support for date and datetime types
+                cutoff_date = config['cutoff-date']
+                if isinstance(cutoff_date, datetime.date):
+                    cutoff_date = datetime.datetime.combine(cutoff_date, datetime.time.min)
+                LOGGER.warning('overriding cutoff date with "%s"', cutoff_date)
+
             # by default only open PRs are returned
             query = '(state="MERGED" or state="OPEN" or state="DECLINED" or state="SUPERSEDED")'
-            if repo_state.cutoff_date:
-                query += ' and updated_on > %s' % format_datetime(repo_state.cutoff_date)
+            if cutoff_date:
+                query += ' and updated_on > %s' % format_datetime(cutoff_date)
 
             for pr in repo.pullrequests.each(
                     q=query,
