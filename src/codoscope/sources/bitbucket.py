@@ -1,10 +1,10 @@
 import datetime
 import logging
 import math
-from typing import Optional
 
 import atlassian.bitbucket as api
 import dateutil.parser
+import pytz
 
 from codoscope.state import SourceState, SourceType
 
@@ -132,13 +132,8 @@ DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
 def format_datetime(x):
     if not x:
         return None
+    x = x.astimezone(pytz.utc)
     return x.strftime(DATETIME_FORMAT)
-
-
-def parse_datetime(s: str) -> Optional[datetime.datetime]:
-    if not s:
-        return None
-    return datetime.datetime.strptime(s, DATETIME_FORMAT)
 
 
 def total_pr_comments_count(state: BitbucketState) -> int:
