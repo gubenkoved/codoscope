@@ -4,7 +4,7 @@ import os
 import os.path
 
 from codoscope.datasets import Datasets
-from codoscope.reports.base import ReportBase, ReportType
+from codoscope.reports.common import ReportBase, ReportType
 from codoscope.sources.bitbucket import BitbucketState
 from codoscope.sources.git import RepoModel
 from codoscope.sources.jira import JiraState

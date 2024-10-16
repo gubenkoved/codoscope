@@ -7,53 +7,18 @@ import pandas
 import pandas as pd
 import plotly.graph_objects as go
 import pytz
-import tzlocal
 
 from codoscope.common import date_time_minutes_offset
 from codoscope.datasets import Datasets
-from codoscope.reports.base import ReportBase, ReportType
+from codoscope.reports.common import (
+    ReportBase,
+    ReportType,
+    render_plotly_report,
+    setup_default_layout,
+)
 from codoscope.state import StateModel
 
 LOGGER = logging.getLogger(__name__)
-
-
-def setup_default_layout(fig, title=None):
-    fig.update_layout(
-        title=title,
-        title_font_family="Ubuntu",
-        # title_font_variant="small-caps",
-        font_family="Ubuntu",
-        plot_bgcolor='white',
-        xaxis=dict(
-            showgrid=True,
-            gridcolor='lightgray',
-            gridwidth=1,
-            griddash='dot',
-            nticks=30,
-        ),
-        yaxis=dict(
-            showgrid=True,
-            gridcolor='lightgray',
-            gridwidth=1,
-            griddash='dot',
-            nticks=20,
-        ),
-        shapes=[  # Add an outer border
-            dict(
-                type="rect",
-                xref="paper", yref="paper",  # Reference the entire paper (plot area)
-                x0=0, y0=0, x1=1, y1=1,
-                line=dict(color="gray", width=1.2)
-            )
-        ],
-    )
-
-    fig.update_layout(
-        hoverlabel=dict(
-            font_size=12,
-            font_family="Ubuntu",
-        )
-    )
 
 
 def time_axis(steps=24):
@@ -82,7 +47,9 @@ def convert_datetime_to_timezone_inplace(data: list[dict], timezone) -> None:
                 item[prop] = item[prop].astimezone(timezone)
 
 
-def activity_scatter(activity_data: list[dict], filter_expr: str | None, timezone_name: str | None):
+def activity_scatter(
+        activity_data: list[dict],
+        filter_expr: str | None, timezone_name: str | None) -> go.Figure:
     fig = go.Figure()
 
     title = 'Overview'
@@ -207,35 +174,9 @@ class OverviewReport(ReportBase):
 
         filter_expr = config.get('filter')
 
-        figures = [
-            activity_scatter(datasets.activity, filter_expr, config.get('timezone')),
-        ]
-
-        local_tz = tzlocal.get_localzone()
-        now = datetime.datetime.now(local_tz)
-        tz_name = local_tz.tzname(now)
-
-        with open(out_path, 'w') as f:
-            f.write('<html>\n')
-            f.write('<head>\n')
-            f.write('<title>codoscope :: overview</title>\n')
-            f.write("""
-                <link rel="preconnect" href="https://fonts.googleapis.com">
-                <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-                <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
-                <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400;1,700&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
-            """)
-            f.write('<style>body { font-family: "Ubuntu"; }</style>\n')
-            f.write('</head>\n')
-            f.write('<body>\n')
-            for fig in figures:
-                f.write(fig.to_html(full_html=False, include_plotlyjs='cdn'))
-            f.write(
-                f"""
-                <div style="color: lightgray; font-size: 11px; text-align: right;">
-                    <i>last updated on {now.strftime('%B %d, %Y at %H:%M:%S')} {tz_name}</i>\n
-                </div>
-                """
-            )
-            f.write('</body>\n')
-            f.write('</html>\n')
+        render_plotly_report(
+            out_path, [
+                activity_scatter(datasets.activity, filter_expr, config.get('timezone')),
+            ],
+            'overview',
+        )

@@ -6,7 +6,7 @@ import coloredlogs
 from codoscope.config import load_config
 from codoscope.datasets import Datasets
 from codoscope.processors.remap_users import RemapUsersProcessor
-from codoscope.reports.base import ReportType
+from codoscope.reports.common import ReportType
 from codoscope.reports.registry import REPORTS_BY_TYPE
 from codoscope.sources.bitbucket import ingest_bitbucket
 from codoscope.sources.git import ingest_git_repo, RepoModel

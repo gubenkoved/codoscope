@@ -48,6 +48,14 @@ reports:
     timezone: "Europe/Amsterdam"
     out-path: overview-2.html
 
+  - name: user-contributions
+    type: user-contributions
+    dir-path: contributions
+
+  - name: per-source-stats
+    type: per-source-stats
+    dir-path: per-source-stats
+
   - name: internal-state
     type: internal-state
     out-path: internal-state.html
