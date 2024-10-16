@@ -1,6 +1,8 @@
+import logging
 import os.path
 
 import pandas
+import plotly.graph_objects as go
 
 from codoscope.common import sanitize_filename
 from codoscope.datasets import Datasets
@@ -11,9 +13,6 @@ from codoscope.reports.common import (
     render_plotly_report,
 )
 from codoscope.state import StateModel
-import plotly.graph_objects as go
-import logging
-
 
 LOGGER = logging.getLogger(__name__)
 

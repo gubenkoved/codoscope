@@ -1,9 +1,9 @@
 import abc
 import enum
 from datetime import datetime
-import tzlocal
 
 import plotly.graph_objects as go
+import tzlocal
 
 from codoscope.datasets import Datasets
 from codoscope.state import StateModel
@@ -12,7 +12,7 @@ from codoscope.state import StateModel
 class ReportType(enum.StrEnum):
     OVERVIEW = 'overview'
     INTERNAL_STATE = 'internal-state'
-    PER_USER_CONTRIBUTIONS = 'per-user-contributions'
+    PER_USER_STATS = 'per-user-stats'
     PER_SOURCE_STATS = 'per-source-stats'
     INDEX = 'index'
 

@@ -1,6 +1,8 @@
+import logging
 import os.path
 
 import pandas
+import plotly.graph_objects as go
 
 from codoscope.common import sanitize_filename
 from codoscope.datasets import Datasets
@@ -11,17 +13,14 @@ from codoscope.reports.common import (
     render_plotly_report,
 )
 from codoscope.state import StateModel
-import plotly.graph_objects as go
-import logging
-
 
 LOGGER = logging.getLogger(__name__)
 
 
-class PerUserContributionsReport(ReportBase):
+class PerUserStatsReport(ReportBase):
     @classmethod
     def get_type(cls) -> ReportType:
-        return ReportType.PER_USER_CONTRIBUTIONS
+        return ReportType.PER_USER_STATS
 
     def weekly_stats(self, df: pandas.DataFrame) -> go.Figure:
         df['activity_type'] = df['activity_type'].fillna('unspecified')
