@@ -42,6 +42,7 @@ class PerUserStatsReport(ReportBase):
 
         fig.update_layout(
             barmode='stack',
+            showlegend=True,  # ensure legend even for single series
         )
 
         return fig
