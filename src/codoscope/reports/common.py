@@ -14,6 +14,7 @@ class ReportType(enum.StrEnum):
     INTERNAL_STATE = 'internal-state'
     PER_USER_STATS = 'per-user-stats'
     PER_SOURCE_STATS = 'per-source-stats'
+    UNIQUE_USERS = 'unique-users'
     INDEX = 'index'
 
 
