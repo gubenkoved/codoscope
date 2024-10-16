@@ -1,5 +1,7 @@
 import logging
 
+from codoscope.exceptions import ConfigError
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -16,11 +18,11 @@ class RemapUsersProcessor:
                     alias = alias_config[prop]
                     if prop == 'name':
                         if alias in self.name_to_canonical_name_map:
-                            raise Exception('Name already mapped: "%s"' % alias)
+                            raise ConfigError('Name already mapped: "%s"' % alias)
                         self.name_to_canonical_name_map[alias] = canonical_name
                     elif prop == 'email':
                         if alias in self.email_to_canonical_name_map:
-                            raise Exception('Email already mapped: "%s"' % alias)
+                            raise ConfigError('Email already mapped: "%s"' % alias)
                         self.email_to_canonical_name_map[alias] = canonical_name
 
     def execute(self, dataset: list[dict]):

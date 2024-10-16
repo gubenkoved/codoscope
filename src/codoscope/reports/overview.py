@@ -8,7 +8,8 @@ import pandas as pd
 import plotly.graph_objects as go
 import pytz
 
-from codoscope.common import date_time_minutes_offset
+from codoscope.common import date_time_minutes_offset, ensure_dir_for_path
+from codoscope.config import read_mandatory, read_optional
 from codoscope.datasets import Datasets
 from codoscope.reports.common import (
     ReportBase,
@@ -168,11 +169,10 @@ class OverviewReport(ReportBase):
         return ReportType.OVERVIEW
 
     def generate(self, config: dict, state: StateModel, datasets: Datasets):
-        out_path = os.path.abspath(config['out-path'])
-        if not os.path.exists(os.path.dirname(out_path)):
-            os.makedirs(os.path.dirname(out_path))
+        out_path = os.path.abspath(read_mandatory(config, 'out-path'))
+        ensure_dir_for_path(out_path)
 
-        filter_expr = config.get('filter')
+        filter_expr = read_optional(config, 'filter')
 
         render_plotly_report(
             out_path, [

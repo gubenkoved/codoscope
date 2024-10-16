@@ -3,8 +3,9 @@ import logging
 
 import coloredlogs
 
-from codoscope.config import load_config
+from codoscope.config import load_config, read_mandatory
 from codoscope.datasets import Datasets
+from codoscope.exceptions import ConfigError
 from codoscope.processors.remap_users import RemapUsersProcessor
 from codoscope.reports.common import ReportType
 from codoscope.reports.registry import REPORTS_BY_TYPE
@@ -47,7 +48,7 @@ def ingest(ingestion_config: dict, state: StateModel):
                 current_state,
             )
         else:
-            raise Exception(f'Unknown source type: {source_config["type"]}')
+            raise ConfigError(f'Unknown source type: {source_config["type"]}')
 
         state.sources[source_name] = source_state
 
@@ -55,7 +56,6 @@ def ingest(ingestion_config: dict, state: StateModel):
 def entrypoint():
     parser = argparse.ArgumentParser(description='Git stats')
     parser.add_argument('--config-path', type=str, help='Path to config file')
-    parser.add_argument('--state-path', type=str, help='Path to the state file')
     parser.add_argument('--log-level', type=str, default='INFO', help='Log level')
 
     args = parser.parse_args()
@@ -66,10 +66,7 @@ def entrypoint():
 
     config = load_config(args.config_path)
 
-    state_path = args.state_path or config.get('state-path')
-    if not state_path:
-        raise Exception('state-path is not defined in config or passed as argument')
-
+    state_path = read_mandatory(config, 'state-path')
     state = StateModel.load(state_path) or StateModel()
 
     ingestion_config = config.get('ingestion', {})
@@ -99,7 +96,7 @@ def entrypoint():
             processor = RemapUsersProcessor(processor_config)
             processor.execute(datasets.activity)
         else:
-            raise Exception('unknown processor type: "%s"' % processor_type)
+            raise ConfigError('unknown processor type: "%s"' % processor_type)
 
     # render reports
     for report_config in config.get('reports', []):
@@ -113,7 +110,7 @@ def entrypoint():
         report_class = REPORTS_BY_TYPE.get(ReportType(report_config['type']))
 
         if report_class is None:
-            raise Exception('unable to find report type "%s"', report_config['type'])
+            raise ConfigError('unable to find report type "%s"', report_config['type'])
 
         report_instance = report_class()
         report_instance.generate(report_config, state, datasets)

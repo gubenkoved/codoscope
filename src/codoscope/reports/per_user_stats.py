@@ -4,7 +4,8 @@ import os.path
 import pandas
 import plotly.graph_objects as go
 
-from codoscope.common import sanitize_filename
+from codoscope.common import sanitize_filename, ensure_dir
+from codoscope.config import read_mandatory
 from codoscope.datasets import Datasets
 from codoscope.reports.common import (
     ReportBase,
@@ -55,11 +56,8 @@ class PerUserStatsReport(ReportBase):
         )
 
     def generate(self, config: dict, state: StateModel, datasets: Datasets) -> None:
-        parent_dir_path = config.get('dir-path')
-
-        if not os.path.exists(parent_dir_path):
-            LOGGER.info('creating directory "%s"', parent_dir_path)
-            os.mkdir(parent_dir_path)
+        parent_dir_path = os.path.abspath(read_mandatory(config, 'dir-path'))
+        ensure_dir(parent_dir_path)
 
         activity_data_frame = pandas.DataFrame(datasets.activity)
         activity_data_frame['timestamp'] = pandas.to_datetime(

@@ -3,7 +3,10 @@ import logging
 import os
 import os.path
 
+from codoscope.common import ensure_dir_for_path
+from codoscope.config import read_mandatory
 from codoscope.datasets import Datasets
+from codoscope.exceptions import ConfigError
 from codoscope.reports.common import ReportBase, ReportType
 from codoscope.sources.bitbucket import BitbucketState
 from codoscope.sources.git import RepoModel
@@ -19,9 +22,8 @@ class InternalStateReport(ReportBase):
         return ReportType.INTERNAL_STATE
 
     def generate(self, config: dict, state: StateModel, datasets: Datasets):
-        out_path = os.path.abspath(config['out-path'])
-        if not os.path.exists(os.path.dirname(out_path)):
-            os.makedirs(os.path.dirname(out_path))
+        out_path = os.path.abspath(read_mandatory(config, 'out-path'))
+        ensure_dir_for_path(out_path)
 
         with open(out_path, 'w') as f:
             f.write('<html>\n')
@@ -101,7 +103,7 @@ class InternalStateReport(ReportBase):
                     f.write('</ul>\n')
                     f.write('</li>\n')
                 else:
-                    raise Exception(f'Unknown source state type: {source_state}')
+                    raise ConfigError(f'Unknown source state type: {source_state}')
 
                 f.write('</ul>\n')
 
