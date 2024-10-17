@@ -1,5 +1,6 @@
 import argparse
 import logging
+import sys
 
 import coloredlogs
 
@@ -119,4 +120,8 @@ def entrypoint():
 
 
 if __name__ == '__main__':
-    entrypoint()
+    try:
+        entrypoint()
+    except Exception as err:
+        LOGGER.fatal('unhandled exception: %r', err, exc_info=True)
+        sys.exit(1)
