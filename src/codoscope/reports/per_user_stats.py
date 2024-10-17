@@ -24,6 +24,7 @@ class PerUserStatsReport(ReportBase):
         return ReportType.PER_USER_STATS
 
     def weekly_stats(self, df: pandas.DataFrame) -> go.Figure:
+        df = df.set_index('timestamp')
         df['activity_type'] = df['activity_type'].fillna('unspecified')
         grouped = df.groupby(['source_name', 'activity_type'])
 
@@ -38,20 +39,66 @@ class PerUserStatsReport(ReportBase):
                 )
             )
 
-        setup_default_layout(fig, 'weekly stats')
+        setup_default_layout(fig, 'Weekly Counts')
 
         fig.update_layout(
             barmode='stack',
             showlegend=True,  # ensure legend even for single series
+            margin=dict(
+                t=50,
+            ),
+        )
+
+        return fig
+
+    def emails_timeline(self, df: pandas.DataFrame) -> go.Figure:
+        df['author_email'] = df['author_email'].fillna('unspecified')
+
+        email_stats = df.groupby('author_email').agg({
+            'timestamp': ['count', 'min', 'max']
+        }).reset_index()
+        email_stats.columns = ['email', 'count', 'first-used', 'last-used']
+        email_stats = email_stats.sort_values('count', ascending=False)
+
+        fig = go.Figure()
+
+        for _, row in email_stats.iterrows():
+            email = row['email']
+            fig.add_trace(
+                go.Scatter(
+                    x=[row["first-used"], row["last-used"]],
+                    y=[email, email],
+                    mode="lines+markers",
+                    name=f"{email} ({row['count']} activities)",
+                    text=[
+                        f"First: {row['first-used'].strftime('%Y-%m-%d %H:%M:%S')}",
+                        f"Last: {row['last-used'].strftime('%Y-%m-%d %H:%M:%S')}",
+                    ],
+                    hoverinfo="text+name",
+                    line=dict(width=3),
+                )
+            )
+
+        setup_default_layout(fig, 'Email Usage Timeline')
+
+        fig.update_layout(
+            xaxis_title='Time',
+            yaxis_title='Email',
+            yaxis={'categoryorder': 'total ascending', 'showticklabels': False},
+            height=max(250, len(email_stats) * 30),
+            showlegend=True,
+            margin=dict(
+                t=50,
+            ),
         )
 
         return fig
 
     def generate_for_user(self, user_name: str, report_path: str, df: pandas.DataFrame):
-        df.set_index('timestamp', inplace=True)
         render_plotly_report(
             report_path, [
                 self.weekly_stats(df),
+                self.emails_timeline(df),
             ],
             title=f'user :: {user_name}',
         )
