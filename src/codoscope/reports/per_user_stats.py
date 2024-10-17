@@ -69,5 +69,5 @@ class PerUserStatsReport(ReportBase):
         for (user_name, ), user_df in grouped_by_user:
             file_name = sanitize_filename(user_name)
             file_path = '%s.html' % os.path.join(parent_dir_path, file_name)
-            LOGGER.info('rendering report for user "%s"', user_name)
+            LOGGER.debug('rendering report for user "%s"', user_name)
             self.generate_for_user(user_name, file_path, user_df)
