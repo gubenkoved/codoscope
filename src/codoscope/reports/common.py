@@ -84,15 +84,23 @@ def render_plotly_report(path: str, figures: list[go.Figure], title: str):
             <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
             <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400;1,700&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
         """)
-        f.write('<style>body { font-family: "Ubuntu"; }</style>\n')
+        f.write(
+            """<style>
+            body {
+                font-family: "Ubuntu";
+                overflow-y: scroll; /* Always show vertical scrollbar */
+            }
+            </style>
+            """
+        )
         f.write('</head>\n')
         f.write('<body>\n')
         for fig in figures:
             f.write(fig.to_html(full_html=False, include_plotlyjs='cdn'))
         f.write(
             f"""
-            <div style="color: lightgray; font-size: 11px; text-align: right;">
-                <i>last updated on {now.strftime('%B %d, %Y at %H:%M:%S')} {tz_name}</i>\n
+            <div style="color: lightgray; font-size: 11px; text-align: center;">
+                <i>generated on {now.strftime('%B %d, %Y at %H:%M:%S')} {tz_name}</i>
             </div>
             """
         )
