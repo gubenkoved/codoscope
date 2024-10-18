@@ -23,8 +23,10 @@ class WordCloudsReport(ReportBase):
         out_path = os.path.abspath(read_mandatory(config, "out-path"))
         ensure_dir_for_path(out_path)
 
-        width = read_optional(config, 'width', 1200)
+        width = read_optional(config, 'width', 1400)
         height = read_optional(config, 'height', 800)
+        max_words = read_optional(config, 'max-words', 250)
+        stop_words = read_optional(config, 'stop-words', None)
         grouping_period = read_optional(config, 'grouping-period', 'Q')
 
         LOGGER.info(
@@ -37,6 +39,8 @@ class WordCloudsReport(ReportBase):
         grouped = df.groupby(df['timestamp'].dt.to_period(grouping_period))
 
         svgs = []
+
+        # TODO: make fields customizable as well
         text_fields = ['message', 'description', 'pr_title']
         for period, group_df in grouped:
             LOGGER.info('processing period %s' % period)
@@ -48,7 +52,12 @@ class WordCloudsReport(ReportBase):
                     if val and not pandas.isna(val):
                         texts.append(row[field])
 
-            wc = wordcloud.WordCloud(width=width, height=height, background_color='white')
+            wc = wordcloud.WordCloud(
+                width=width,
+                height=height,
+                max_words=max_words,
+                stopwords=stop_words or [],
+                background_color='white')
             wc.generate(' '.join(texts))
             svg = wc.to_svg()
             svgs.append((period, svg))

@@ -59,8 +59,12 @@ reports:
   - name: word-clouds
     type: word-clouds
     grouping-period: Q
-    width: 1200
+    width: 1400
     height: 800
+    max-words: 250
+    stop-words:
+      - list
+      - here
     out-path: word-clouds.html
 
   - name: internal-state
