@@ -143,6 +143,14 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
         ]
 
     cutoff_date = state.cutoff_date
+
+    if config.get('cutoff-date'):
+        # YAML has built-in support for date and datetime types
+        cutoff_date = config['cutoff-date']
+        if isinstance(cutoff_date, datetime.date):
+            cutoff_date = datetime.datetime.combine(cutoff_date, datetime.time.min)
+        LOGGER.warning('overriding cutoff date with "%s"', cutoff_date)
+
     query = get_query(cutoff_date)
     limit = max(10, config.get('jql-query-limit', 100))
     start = 0
