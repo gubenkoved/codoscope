@@ -6,18 +6,18 @@ import atlassian.bitbucket as api
 import dateutil.parser
 import pytz
 
-from codoscope.state import SourceState, SourceType
+from codoscope.state import SourceState, SourceType, VersionedState
 
 LOGGER = logging.getLogger(__name__)
 
 
-class ActorModel:
+class ActorModel(VersionedState):
     def __init__(self, account_id: str, display_name: str):
         self.account_id: str = account_id
         self.display_name: str = display_name
 
 
-class CommentModel:
+class CommentModel(VersionedState):
     def __init__(
             self, author: ActorModel | None, message: str | None,
             created_on: datetime.datetime | None):
@@ -26,7 +26,7 @@ class CommentModel:
         self.created_on: datetime.datetime | None = created_on
 
 
-class PullRequestParticipantModel:
+class PullRequestParticipantModel(VersionedState):
     def __init__(
             self,
             user: ActorModel | None,
@@ -37,7 +37,7 @@ class PullRequestParticipantModel:
         self.participated_on: datetime.datetime | None = participated_on
 
 
-class PullRequestModel:
+class PullRequestModel(VersionedState):
     def __init__(
             self,
             id: str,
@@ -67,7 +67,7 @@ class PullRequestModel:
         self.meta_version: int | None = 1
 
 
-class RepositoryModel:
+class RepositoryModel(VersionedState):
     def __init__(self):
         self.created_on: datetime.datetime | None = None
         self.pull_requests_map: dict[str, PullRequestModel] = {}
@@ -83,7 +83,7 @@ class RepositoryModel:
         return sum(len(pr.commentaries) for pr in self.pull_requests_map.values())
 
 
-class ProjectModel:
+class ProjectModel(VersionedState):
     def __init__(self):
         self.repositories_map: dict[str, RepositoryModel] = {}
 

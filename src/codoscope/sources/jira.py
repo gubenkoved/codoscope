@@ -6,26 +6,26 @@ import atlassian.jira as api
 import dateutil.parser
 import pytz
 
-from codoscope.state import SourceState, SourceType
+from codoscope.state import SourceState, SourceType, VersionedState
 
 LOGGER = logging.getLogger(__name__)
 
 
-class ActorModel:
+class ActorModel(VersionedState):
     def __init__(self, account_id: str, display_name: str, email: str | None):
         self.account_id: str = account_id
         self.display_name: str = display_name
         self.email: str | None = email
 
 
-class JiraCommentModel:
+class JiraCommentModel(VersionedState):
     def __init__(self, message: str, created_by: ActorModel, created_on: datetime.datetime):
         self.message: str = message
         self.created_by: ActorModel = created_by
         self.created_on: datetime.datetime = created_on
 
 
-class JiraItemModel:
+class JiraItemModel(VersionedState):
     def __init__(
             self,
             id: str,

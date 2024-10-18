@@ -16,10 +16,14 @@ class SourceType(enum.StrEnum):
     JIRA = 'jira'
 
 
-class SourceState(abc.ABC):
+class VersionedState:
+    def __init__(self):
+        self.version = 1
+
+
+class SourceState(abc.ABC, VersionedState):
     def __init__(self):
         self.created_at: datetime.datetime = datetime.datetime.now()
-        self.version: int = 1
 
     @property
     @abc.abstractmethod
@@ -27,11 +31,10 @@ class SourceState(abc.ABC):
         raise NotImplementedError
 
 
-class StateModel:
+class StateModel(VersionedState):
     def __init__(self):
         self.sources: dict[str, SourceState] = {}
         self.created_at: datetime.datetime = datetime.datetime.now()
-        self.version: int = 1
 
     def save(self, path: str) -> None:
         LOGGER.info('saving state into "%s"', path)
