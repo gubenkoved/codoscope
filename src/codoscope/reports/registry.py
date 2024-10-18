@@ -4,6 +4,7 @@ from codoscope.reports.overview import OverviewReport
 from codoscope.reports.per_source_stats import PerSourceStatsReport
 from codoscope.reports.per_user_stats import PerUserStatsReport
 from codoscope.reports.unique_users import UniqueUsersReport
+from codoscope.reports.word_clouds import WordCloudsReport
 
 REPORTS: list[type[ReportBase]] = [
     OverviewReport,
@@ -11,6 +12,7 @@ REPORTS: list[type[ReportBase]] = [
     PerUserStatsReport,
     PerSourceStatsReport,
     UniqueUsersReport,
+    WordCloudsReport,
 ]
 
 REPORTS_BY_TYPE: dict[ReportType, type[ReportBase]]  = {

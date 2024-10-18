@@ -15,6 +15,7 @@ class ReportType(enum.StrEnum):
     PER_USER_STATS = 'per-user-stats'
     PER_SOURCE_STATS = 'per-source-stats'
     UNIQUE_USERS = 'unique-users'
+    WORD_CLOUDS = 'word-clouds'
     INDEX = 'index'
 
 
@@ -69,7 +70,7 @@ def setup_default_layout(fig, title=None):
     )
 
 
-def render_plotly_report(path: str, figures: list[go.Figure], title: str):
+def render_html_report(path: str, body: str, title: str):
     local_tz = tzlocal.get_localzone()
     now = datetime.now(local_tz)
     tz_name = local_tz.tzname(now)
@@ -95,8 +96,7 @@ def render_plotly_report(path: str, figures: list[go.Figure], title: str):
         )
         f.write('</head>\n')
         f.write('<body>\n')
-        for fig in figures:
-            f.write(fig.to_html(full_html=False, include_plotlyjs='cdn'))
+        f.write(body)
         f.write(
             f"""
             <div style="color: lightgray; font-size: 11px; text-align: center;">
@@ -106,3 +106,10 @@ def render_plotly_report(path: str, figures: list[go.Figure], title: str):
         )
         f.write('</body>\n')
         f.write('</html>\n')
+
+
+def render_plotly_report(path: str, figures: list[go.Figure], title: str):
+    body_items = []
+    for fig in figures:
+        body_items.append(fig.to_html(full_html=False, include_plotlyjs='cdn'))
+    render_html_report(path, '\n'.join(body_items), title)

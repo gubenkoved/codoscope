@@ -16,6 +16,7 @@ if __name__ == '__main__':
             'pyyaml',
             'atlassian-python-api',
             'python-dateutil',
+            'wordcloud',
         ],
         entry_points={
             'console_scripts': ['codoscope=codoscope.cli:entrypoint'],

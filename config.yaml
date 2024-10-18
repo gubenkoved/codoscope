@@ -56,6 +56,13 @@ reports:
     type: per-source-stats
     dir-path: per-source-stats
 
+  - name: word-clouds
+    type: word-clouds
+    grouping-period: Q
+    width: 1200
+    height: 800
+    out-path: word-clouds.html
+
   - name: internal-state
     type: internal-state
     out-path: internal-state.html
