@@ -48,11 +48,11 @@ class WordCloudsReport(ReportBase):
             'commit_message': 1,
             'jira_item_key': 1,
             'jira_summary': 5,
-            'jira_message': 1,
-            'jira_description': 1,
-            'bitbucket_pr_title': 3,
+            # 'jira_message': 1,
+            # 'jira_description': 1,
+            'bitbucket_pr_title': 1,
             'bitbucket_pr_description': 3,
-            'bitbucket_pr_comment': 1,
+            # 'bitbucket_pr_comment': 1,
         }
 
         for period, group_df in grouped:
@@ -70,7 +70,8 @@ class WordCloudsReport(ReportBase):
                 max_words=max_words,
                 stopwords=stop_words or [],
                 background_color='white')
-            wc.generate(' '.join(texts))
+            text = ' '.join(texts)
+            wc.generate(text)
             svg = wc.to_svg()
             svgs.append((period, svg))
 
