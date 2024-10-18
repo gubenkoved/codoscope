@@ -122,9 +122,9 @@ def activity_scatter(
     LOGGER.info('groups count: %s', grouped_df.ngroups)
 
     hover_data_columns = [
-        'sha',
-        'pr_title',
-        'item_key',
+        'commit_sha',
+        'bitbucket_pr_title',
+        'bitbucket_item_key',
     ]
 
     for (author, activity_type), df in grouped_df:

@@ -32,12 +32,12 @@ def extract_activity(state: StateModel) -> list[dict]:
                     'timestamp': commit.committed_datetime,
                     'author': commit.author_name,
                     'author_email': commit.author_email,
-                    'sha': commit.hexsha,
-                    'message': commit.message,
-                    'message_first_line': commit.message.split('\n')[0],
-                    'changed_lines': commit.stats.total_changed_lines,
+                    'commit_sha': commit.hexsha,
+                    'commit_message': commit.message,
+                    'commit_message_first_line': commit.message.split('\n')[0],
+                    'commit_changed_lines': commit.stats.total_changed_lines,
+                    'commit_changed_files': list(commit.stats.changed_files),
                     'size_class': max(5.0, min(20.0, 5 + 3 * math.log(commit.stats.total_changed_lines + 1, 10))),
-                    'changed_files': list(commit.stats.changed_files),
                 })
         elif isinstance(source, BitbucketState):
             for project_name, project in source.projects_map.items():
@@ -51,10 +51,10 @@ def extract_activity(state: StateModel) -> list[dict]:
                             'timestamp': pr.created_on,
                             'size_class': 15,
                             'author': pr.author.display_name if pr.author else None,
-                            'pr_title': pr.title,
-                            'pr_description': pr.description,
-                            'pr_id': pr.id,
-                            'pr_url': pr.url,
+                            'bitbucket_pr_title': pr.title,
+                            'bitbucket_pr_description': pr.description,
+                            'bitbucket_pr_id': pr.id,
+                            'bitbucket_pr_url': pr.url,
                         })
                         for participant in pr.participants or []:
                             if not participant.has_approved:
@@ -67,9 +67,9 @@ def extract_activity(state: StateModel) -> list[dict]:
                                 'timestamp': participant.participated_on,
                                 'size_class': 8,
                                 'author': participant.user.display_name,
-                                'pr_title': pr.title,
-                                'pr_id': pr.id,
-                                'pr_url': pr.url,
+                                'bitbucket_pr_title': pr.title,
+                                'bitbucket_pr_id': pr.id,
+                                'bitbucket_pr_url': pr.url,
                             })
                         for comment in pr.commentaries:
                             is_answering_your_own_pr = (
@@ -85,10 +85,11 @@ def extract_activity(state: StateModel) -> list[dict]:
                                 'timestamp': comment.created_on,
                                 'size_class': 4 if is_answering_your_own_pr else 6,
                                 'author': comment.author.display_name,
-                                'is_answering_your_own_pr': is_answering_your_own_pr,
-                                'pr_title': pr.title,
-                                'pr_id': pr.id,
-                                'pr_url': pr.url,
+                                'bitbucket_is_answering_your_own_pr': is_answering_your_own_pr,
+                                'bitbucket_pr_title': pr.title,
+                                'bitbucket_pr_id': pr.id,
+                                'bitbucket_pr_url': pr.url,
+                                'bitbucket_pr_comment': comment.message,
                             })
         elif isinstance(source, JiraState):
             for item in source.items_map.values():
@@ -101,8 +102,9 @@ def extract_activity(state: StateModel) -> list[dict]:
                     'size_class': 8,
                     'author': item.creator.display_name,
                     'author_email': item.creator.email,
-                    'item_key': item.key,
-                    'description': item.description,
+                    'jira_item_key': item.key,
+                    'jira_description': item.description,
+                    'jira_summary': item.summary,
                 })
                 for comment in item.comments or []:
                     data.append({
@@ -114,8 +116,8 @@ def extract_activity(state: StateModel) -> list[dict]:
                         'size_class': 4,
                         'author': comment.created_by.display_name,
                         'author_email': comment.created_by.email,
-                        'item_key': item.key,
-                        'message': comment.message,
+                        'jira_item_key': item.key,
+                        'jira_message': comment.message,
                     })
         else:
             LOGGER.warning('skipping source "%s" of type "%s"', source_name, source.source_type)
