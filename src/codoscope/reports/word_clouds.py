@@ -28,23 +28,25 @@ class WordCloudsReport(ReportBase):
         grouping_period = read_optional(config, 'grouping-period', 'Q')
 
         LOGGER.info(
-            'generating word clouds report (%s x %s) grouping by %s',
+            'generating word clouds report (%sx%s) grouping period is "%s"',
             width, height, grouping_period)
 
         df = pandas.DataFrame(datasets.activity)
         df['timestamp'] = pandas.to_datetime(df['timestamp'], utc=True)
-        df['message'] = df['message'].fillna('')
 
         grouped = df.groupby(df['timestamp'].dt.to_period(grouping_period))
 
         svgs = []
+        text_fields = ['message', 'description', 'pr_title']
         for period, group_df in grouped:
-            LOGGER.debug('processing period %s' % period)
+            LOGGER.info('processing period %s' % period)
             texts = []
 
             for idx, row in group_df.iterrows():
-                if row['message']:
-                    texts.append(row['message'])
+                for field in text_fields:
+                    val = row[field]
+                    if val and not pandas.isna(val):
+                        texts.append(row[field])
 
             wc = wordcloud.WordCloud(width=width, height=height, background_color='white')
             wc.generate(' '.join(texts))

@@ -52,6 +52,7 @@ def extract_activity(state: StateModel) -> list[dict]:
                             'size_class': 15,
                             'author': pr.author.display_name if pr.author else None,
                             'pr_title': pr.title,
+                            'pr_description': pr.description,
                             'pr_id': pr.id,
                             'pr_url': pr.url,
                         })
@@ -101,6 +102,7 @@ def extract_activity(state: StateModel) -> list[dict]:
                     'author': item.creator.display_name,
                     'author_email': item.creator.email,
                     'item_key': item.key,
+                    'description': item.description,
                 })
                 for comment in item.comments or []:
                     data.append({
@@ -113,6 +115,7 @@ def extract_activity(state: StateModel) -> list[dict]:
                         'author': comment.created_by.display_name,
                         'author_email': comment.created_by.email,
                         'item_key': item.key,
+                        'message': comment.message,
                     })
         else:
             LOGGER.warning('skipping source "%s" of type "%s"', source_name, source.source_type)
