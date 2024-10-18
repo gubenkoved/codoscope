@@ -32,7 +32,7 @@ class JiraItemModel:
             key: str,
             item_type: str,
             summary: str,
-            description: str,
+            description: str | None,
             status_name: str,
             status_category_name: str,
             creator: ActorModel,
@@ -47,7 +47,7 @@ class JiraItemModel:
         self.key: str = key
         self.item_type: str = item_type
         self.summary: str = summary
-        self.description: str = description
+        self.description: str | None = description
         self.status_name: str = status_name
         self.status_category_name: str = status_category_name
         self.creator: ActorModel = creator
@@ -168,8 +168,8 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
                 issue['id'],
                 issue['key'],
                 fields['issuetype']['name'],
-                fields['summary'],
-                fields['description'],
+                fields.get('summary'),
+                fields.get('description'),
                 fields['status']['name'],
                 fields['status']['statusCategory']['name'],
                 convert_actor(fields['creator']),
