@@ -63,8 +63,24 @@ reports:
     height: 800
     max-words: 250
     stop-words:
-      - list
-      - here
+      - "a"
+      - "an"
+      - "and"
+      - "be"
+      - "for"
+      - "from"
+      - "http"
+      - "https"
+      - "in"
+      - "is"
+      - "it"
+      - "of"
+      - "on"
+      - "or"
+      - "that"
+      - "the"
+      - "this"
+      - "to"
     out-path: word-clouds.html
 
   - name: internal-state
