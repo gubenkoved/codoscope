@@ -19,7 +19,8 @@ class ActorModel:
 
 
 class JiraCommentModel:
-    def __init__(self, created_by: ActorModel, created_on: datetime.datetime):
+    def __init__(self, message: str, created_by: ActorModel, created_on: datetime.datetime):
+        self.message: str = message
         self.created_by: ActorModel = created_by
         self.created_on: datetime.datetime = created_on
 
@@ -31,6 +32,7 @@ class JiraItemModel:
             key: str,
             item_type: str,
             summary: str,
+            description: str,
             status_name: str,
             status_category_name: str,
             creator: ActorModel,
@@ -45,6 +47,7 @@ class JiraItemModel:
         self.key: str = key
         self.item_type: str = item_type
         self.summary: str = summary
+        self.description: str = description
         self.status_name: str = status_name
         self.status_category_name: str = status_category_name
         self.creator: ActorModel = creator
@@ -132,6 +135,7 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
             return []
         return [
             JiraCommentModel(
+                comment['body'],
                 convert_actor(comment['author']),
                 dateutil.parser.parse(comment['created'])
             )
@@ -157,6 +161,7 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
                 issue['key'],
                 fields['issuetype']['name'],
                 fields['summary'],
+                fields['description'],
                 fields['status']['name'],
                 fields['status']['statusCategory']['name'],
                 convert_actor(fields['creator']),
