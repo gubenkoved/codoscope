@@ -11,7 +11,7 @@ from codoscope.reports.common import (
     ReportBase,
     ReportType,
     setup_default_layout,
-    render_plotly_report,
+    render_widgets_report,
 )
 from codoscope.state import StateModel
 
@@ -49,11 +49,12 @@ class PerSourceStatsReport(ReportBase):
 
     def generate_for_source(self, source_name: str, report_path: str, df: pandas.DataFrame):
         df.set_index('timestamp', inplace=True)
-        render_plotly_report(
-            report_path, [
+        render_widgets_report(
+            report_path,
+            [
                 self.weekly_stats(df),
             ],
-            title=f'source :: {source_name}',
+            title=f"source :: {source_name}",
         )
 
     def generate(self, config: dict, state: StateModel, datasets: Datasets) -> None:

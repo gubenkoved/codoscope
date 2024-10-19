@@ -56,7 +56,7 @@ class CommitModel:
         self.parent_hexsha: list[str] = parent_hexsha
 
     @property
-    def is_merge_commit(self):
+    def is_merge_commit(self) -> bool:
         return len(self.parent_hexsha) > 1
 
     @property

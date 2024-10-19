@@ -3,6 +3,7 @@ import os.path
 
 import pandas
 import plotly.graph_objects as go
+import wordcloud
 
 from codoscope.common import sanitize_filename, ensure_dir
 from codoscope.config import read_mandatory
@@ -11,7 +12,10 @@ from codoscope.reports.common import (
     ReportBase,
     ReportType,
     setup_default_layout,
-    render_plotly_report,
+    render_widgets_report,
+)
+from codoscope.reports.word_clouds import (
+    render_word_cloud_html,
 )
 from codoscope.state import StateModel
 
@@ -51,11 +55,14 @@ class PerUserStatsReport(ReportBase):
 
         return fig
 
-    def line_counts_stats(self, df: pandas.DataFrame) -> go.Figure:
+    def line_counts_stats(self, df: pandas.DataFrame) -> go.Figure | None:
         df = df.set_index('timestamp')
 
         # filter leaving only commits
         df = df[df['activity_type'] == 'commit']
+
+        if len(df) == 0:
+            return None
 
         resampled_df = df.resample('W').agg({
             'commit_added_lines': 'sum',
@@ -98,6 +105,43 @@ class PerUserStatsReport(ReportBase):
         )
 
         return fig
+
+    def commit_themes_wordcloud(self, df: pandas.DataFrame) -> str | None:
+        df = df.set_index("timestamp")
+
+        # filter leaving only commits
+        df = df[df["activity_type"] == "commit"]
+
+        # remove merge commits as useless
+        df = df[df["commit_is_merge_commit"] == False]
+
+        if len(df) == 0:
+            return None
+
+        commit_messages = []
+        for _, row in df.iterrows():
+            if pandas.isna(row['commit_message']):
+                continue
+            commit_messages.append(row['commit_message'])
+
+        # TODO: make paramters configurable
+        wc = wordcloud.WordCloud(
+            width=1900,
+            height=800,
+            max_words=250,
+            # stopwords=stop_words or [],
+            background_color="white",
+        )
+        text = " ".join(commit_messages)
+        wc.generate(text)
+        svg = render_word_cloud_html(wc)
+
+        return f"""
+<div style="padding: 20px">
+    <h2>Commit themes</h2>
+    {svg}
+</div>
+"""
 
     def emails_timeline(self, df: pandas.DataFrame) -> go.Figure:
         df['author_email'] = df['author_email'].fillna('unspecified')
@@ -143,13 +187,15 @@ class PerUserStatsReport(ReportBase):
         return fig
 
     def generate_for_user(self, user_name: str, report_path: str, df: pandas.DataFrame):
-        render_plotly_report(
-            report_path, [
+        render_widgets_report(
+            report_path,
+            [
                 self.weekly_stats(df),
                 self.line_counts_stats(df),
                 self.emails_timeline(df),
+                self.commit_themes_wordcloud(df),
             ],
-            title=f'user :: {user_name}',
+            title=f"user :: {user_name}",
         )
 
     def generate(self, config: dict, state: StateModel, datasets: Datasets) -> None:

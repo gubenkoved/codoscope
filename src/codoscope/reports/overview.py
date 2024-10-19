@@ -14,7 +14,7 @@ from codoscope.datasets import Datasets
 from codoscope.reports.common import (
     ReportBase,
     ReportType,
-    render_plotly_report,
+    render_widgets_report,
     setup_default_layout,
 )
 from codoscope.state import StateModel
@@ -174,9 +174,12 @@ class OverviewReport(ReportBase):
 
         filter_expr = read_optional(config, 'filter')
 
-        render_plotly_report(
-            out_path, [
-                activity_scatter(datasets.activity, filter_expr, config.get('timezone')),
+        render_widgets_report(
+            out_path,
+            [
+                activity_scatter(
+                    datasets.activity, filter_expr, config.get("timezone")
+                ),
             ],
-            'overview',
+            title="overview",
         )

@@ -14,6 +14,22 @@ from codoscope.state import StateModel
 LOGGER = logging.getLogger(__name__)
 
 
+def render_word_cloud_html(wordcloud: wordcloud.WordCloud) -> str:
+    """
+    Render word cloud HTML with SVG inside that will take full page width
+    irrespectively from the page width.
+    """
+    svg = wordcloud.to_svg()
+
+    # TODO: use a better way to customize it via parsing HTML
+    svg = svg.replace(
+        "<svg ",
+        f'<svg viewBox="0 0 {wordcloud.width} {wordcloud.height}" style="width: 100%; height: auto;"',
+    )
+
+    return svg
+
+
 class WordCloudsReport(ReportBase):
     @classmethod
     def get_type(cls) -> ReportType:
@@ -23,7 +39,7 @@ class WordCloudsReport(ReportBase):
         out_path = os.path.abspath(read_mandatory(config, "out-path"))
         ensure_dir_for_path(out_path)
 
-        width = read_optional(config, 'width', 1400)
+        width = read_optional(config, 'width', 1900)
         height = read_optional(config, 'height', 800)
         max_words = read_optional(config, 'max-words', 250)
         stop_words = read_optional(config, 'stop-words', None)
@@ -72,7 +88,7 @@ class WordCloudsReport(ReportBase):
                 background_color='white')
             text = ' '.join(texts)
             wc.generate(text)
-            svg = wc.to_svg()
+            svg = render_word_cloud_html(wc)
             svgs.append((period, svg))
 
         # write svgs to html
@@ -81,4 +97,10 @@ class WordCloudsReport(ReportBase):
             body_items.append(f'<h1>{period}</h1>\n')
             body_items.append(svg)
 
-        render_html_report(out_path, '\n'.join(body_items), 'word clouds')
+        body = f"""
+<div style="padding: 20px">
+{'\n'.join(body_items)}
+</div>
+"""
+
+        render_html_report(out_path, body, 'word clouds')

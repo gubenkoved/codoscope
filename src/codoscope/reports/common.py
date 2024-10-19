@@ -1,5 +1,6 @@
 import abc
 import enum
+import typing
 from datetime import datetime
 
 import plotly.graph_objects as go
@@ -108,8 +109,16 @@ def render_html_report(path: str, body: str, title: str):
         f.write('</html>\n')
 
 
-def render_plotly_report(path: str, figures: list[go.Figure], title: str):
+def render_widgets_report(path: str, widgets: typing.Iterable[go.Figure | str | None], title: str):
     body_items = []
-    for fig in figures:
-        body_items.append(fig.to_html(full_html=False, include_plotlyjs='cdn'))
+    for widget in widgets:
+        if widget is None:
+            continue
+        if isinstance(widget, go.Figure):
+            html = widget.to_html(full_html=False, include_plotlyjs="cdn")
+        elif isinstance(widget, str):
+            html = widget
+        else:
+            raise Exception('unknown widget type "%s"' % type(widget))
+        body_items.append(html)
     render_html_report(path, '\n'.join(body_items), title)

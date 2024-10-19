@@ -39,6 +39,7 @@ def extract_activity(state: StateModel) -> list[dict]:
                     'commit_removed_lines': commit.stats.total_deletions,
                     'commit_changed_lines': commit.stats.total_changed_lines,
                     'commit_changed_files': list(commit.stats.changed_files),
+                    'commit_is_merge_commit': commit.is_merge_commit,
                     'size_class': max(5.0, min(20.0, 5 + 3 * math.log(commit.stats.total_changed_lines + 1, 10))),
                 })
         elif isinstance(source, BitbucketState):
