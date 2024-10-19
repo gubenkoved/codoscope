@@ -51,6 +51,54 @@ class PerUserStatsReport(ReportBase):
 
         return fig
 
+    def line_counts_stats(self, df: pandas.DataFrame) -> go.Figure:
+        df = df.set_index('timestamp')
+
+        # filter leaving only commits
+        df = df[df['activity_type'] == 'commit']
+
+        resampled_df = df.resample('W').agg({
+            'commit_added_lines': 'sum',
+            'commit_removed_lines': 'sum',
+        })
+
+        resampled_df['timestamp'] = resampled_df.index
+
+        fig = go.Figure()
+
+        fig.add_trace(
+            go.Bar(
+                name=f"lines added",
+                x=resampled_df["timestamp"],
+                y=resampled_df["commit_added_lines"],
+                marker_color="#2296bf",  # blue-ish
+            )
+        )
+        fig.add_trace(
+            go.Bar(
+                name=f"lines removed",
+                x=resampled_df["timestamp"],
+                y=resampled_df["commit_removed_lines"],
+                marker_color="#e25548",  # red-ish
+            )
+        )
+
+        setup_default_layout(fig, 'Weekly Line Counts')
+
+        fig.update_layout(
+            # yaxis_type="log",
+            barmode="group",
+            height=600,
+            margin=dict(
+                t=50,
+            ),
+            yaxis=dict(
+                type="log",
+            ),
+        )
+
+        return fig
+
     def emails_timeline(self, df: pandas.DataFrame) -> go.Figure:
         df['author_email'] = df['author_email'].fillna('unspecified')
 
@@ -98,6 +146,7 @@ class PerUserStatsReport(ReportBase):
         render_plotly_report(
             report_path, [
                 self.weekly_stats(df),
+                self.line_counts_stats(df),
                 self.emails_timeline(df),
             ],
             title=f'user :: {user_name}',

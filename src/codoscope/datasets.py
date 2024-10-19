@@ -35,6 +35,8 @@ def extract_activity(state: StateModel) -> list[dict]:
                     'commit_sha': commit.hexsha,
                     'commit_message': commit.message,
                     'commit_message_first_line': commit.message.split('\n')[0],
+                    'commit_added_lines': commit.stats.total_insertions,
+                    'commit_removed_lines': commit.stats.total_deletions,
                     'commit_changed_lines': commit.stats.total_changed_lines,
                     'commit_changed_files': list(commit.stats.changed_files),
                     'size_class': max(5.0, min(20.0, 5 + 3 * math.log(commit.stats.total_changed_lines + 1, 10))),
