@@ -23,6 +23,7 @@ class VersionedState:
 
 class SourceState(abc.ABC, VersionedState):
     def __init__(self):
+        super().__init__()
         self.created_at: datetime.datetime = datetime.datetime.now()
 
     @property
