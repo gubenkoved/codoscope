@@ -124,7 +124,7 @@ def activity_scatter(
     hover_data_columns = [
         'commit_sha',
         'bitbucket_pr_title',
-        'bitbucket_item_key',
+        'jira_item_key',
     ]
 
     for (author, activity_type), df in grouped_df:
