@@ -18,31 +18,68 @@ from codoscope.state import StateModel
 LOGGER = logging.getLogger(__name__)
 
 
+NAN_REPLACEMENT = 'unspecified'
+
+
 class PerSourceStatsReport(ReportBase):
     @classmethod
     def get_type(cls) -> ReportType:
         return ReportType.PER_SOURCE_STATS
 
     def weekly_stats(self, df: pandas.DataFrame) -> go.Figure:
-        df['source_subtype'] = df['source_subtype'].fillna('unspecified')
-        grouped_by_subtype = df.groupby(['source_subtype'])
+        df['activity_type'] = df['activity_type'].fillna(NAN_REPLACEMENT)
+
+        grouped_by_activity = df.groupby(['activity_type'])
 
         fig = go.Figure()
-        for (source_subtype, ), group_df in grouped_by_subtype:
+        for (activity_type, ), group_df in grouped_by_activity:
             weekly_counts = group_df.resample('W').size().reset_index(name='count')
             fig.add_trace(
                 go.Bar(
-                    name=source_subtype,
+                    name=activity_type,
                     x=weekly_counts['timestamp'],
                     y=weekly_counts['count'],
                 )
             )
 
-        setup_default_layout(fig, 'weekly stats')
+        setup_default_layout(fig, 'Weekly Stats')
 
         fig.update_layout(
             barmode='stack',
             showlegend=True,  # ensure legend even for single series
+        )
+
+        return fig
+
+    def weekly_stats_by_user(self, df: pandas.DataFrame) -> go.Figure:
+        df['author'] = df['author'].fillna(NAN_REPLACEMENT)
+        df['activity_type'] = df['activity_type'].fillna(NAN_REPLACEMENT)
+
+        sorted_df = df.sort_values(by=['author', 'activity_type'], ascending=True)
+        grouped_by_user_activity = sorted_df.groupby(['author', 'activity_type'])
+
+        fig = go.Figure()
+        for (author, activity_type), group_df in grouped_by_user_activity:
+            weekly_counts = group_df.resample('W').size().reset_index(name='count')
+
+            trace_name = '%s %s' % (author, activity_type)
+
+            fig.add_trace(
+                go.Bar(
+                    name=trace_name,
+                    x=weekly_counts['timestamp'],
+                    y=weekly_counts['count'],
+                )
+            )
+
+        setup_default_layout(fig, 'Weekly Stats by Author')
+
+        fig.update_layout(
+            barmode='stack',
+            showlegend=True,  # ensure legend even for single series
+            legend=dict(
+                traceorder='normal'  # use the order in which traces were added
+            ),
         )
 
         return fig
@@ -53,6 +90,7 @@ class PerSourceStatsReport(ReportBase):
             report_path,
             [
                 self.weekly_stats(df),
+                self.weekly_stats_by_user(df),
             ],
             title=f"source :: {source_name}",
         )
