@@ -32,12 +32,12 @@ class ReportBase(abc.ABC):
 
 
 # TODO: move to separate plotly related module to better organize things
-def setup_default_layout(fig, title=None):
+def setup_default_layout(fig: go.Figure, title: str | None = None) -> None:
     fig.update_layout(
         title=title,
-        title_font_family="Ubuntu",
-        # title_font_variant="small-caps",
-        font_family="Ubuntu",
+        title_font_family='Ubuntu',
+        # title_font_variant='small-caps',
+        font_family='Ubuntu',
         plot_bgcolor='white',
         xaxis=dict(
             showgrid=True,
@@ -55,23 +55,33 @@ def setup_default_layout(fig, title=None):
         ),
         shapes=[  # Add an outer border
             dict(
-                type="rect",
-                xref="paper", yref="paper",  # Reference the entire paper (plot area)
-                x0=0, y0=0, x1=1, y1=1,
-                line=dict(color="gray", width=1.2)
+                type='rect',
+                xref='paper',
+                yref='paper',  # Reference the entire paper (plot area)
+                x0=0,
+                y0=0,
+                x1=1,
+                y1=1,
+                line=dict(
+                    color='gray',
+                    width=1.2,
+                ),
             )
         ],
+        legend=dict(
+            traceorder='normal',  # use the order in which traces were added
+        ),
     )
 
     fig.update_layout(
         hoverlabel=dict(
             font_size=12,
-            font_family="Ubuntu",
+            font_family='Ubuntu',
         )
     )
 
 
-def render_html_report(path: str, body: str, title: str):
+def render_html_report(path: str, body: str, title: str) -> None:
     local_tz = tzlocal.get_localzone()
     now = datetime.now(local_tz)
     tz_name = local_tz.tzname(now)
@@ -109,13 +119,14 @@ def render_html_report(path: str, body: str, title: str):
         f.write('</html>\n')
 
 
-def render_widgets_report(path: str, widgets: typing.Iterable[go.Figure | str | None], title: str):
+def render_widgets_report(
+        path: str, widgets: typing.Iterable[go.Figure | str | None], title: str) -> None:
     body_items = []
     for widget in widgets:
         if widget is None:
             continue
         if isinstance(widget, go.Figure):
-            html = widget.to_html(full_html=False, include_plotlyjs="cdn")
+            html = widget.to_html(full_html=False, include_plotlyjs='cdn')
         elif isinstance(widget, str):
             html = widget
         else:

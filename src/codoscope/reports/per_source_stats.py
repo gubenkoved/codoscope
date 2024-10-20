@@ -77,9 +77,6 @@ class PerSourceStatsReport(ReportBase):
         fig.update_layout(
             barmode='stack',
             showlegend=True,  # ensure legend even for single series
-            legend=dict(
-                traceorder='normal'  # use the order in which traces were added
-            ),
         )
 
         return fig
