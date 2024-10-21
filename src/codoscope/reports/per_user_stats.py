@@ -17,6 +17,9 @@ from codoscope.reports.common import (
 from codoscope.reports.word_clouds import (
     render_word_cloud_html,
 )
+from codoscope.reports.overview import (
+    activity_scatter,
+)
 from codoscope.state import StateModel
 
 LOGGER = logging.getLogger(__name__)
@@ -186,10 +189,11 @@ class PerUserStatsReport(ReportBase):
 
         return fig
 
-    def generate_for_user(self, user_name: str, report_path: str, df: pandas.DataFrame):
+    def generate_for_user(self, config: dict, user_name: str, report_path: str, df: pandas.DataFrame):
         render_widgets_report(
             report_path,
             [
+                activity_scatter(df, timezone_name=config.get("timezone")),
                 self.weekly_stats(df),
                 self.line_counts_stats(df),
                 self.emails_timeline(df),
@@ -212,4 +216,4 @@ class PerUserStatsReport(ReportBase):
             file_name = sanitize_filename(user_name)
             file_path = '%s.html' % os.path.join(parent_dir_path, file_name)
             LOGGER.debug('rendering report for user "%s"', user_name)
-            self.generate_for_user(user_name, file_path, user_df)
+            self.generate_for_user(config, user_name, file_path, user_df)

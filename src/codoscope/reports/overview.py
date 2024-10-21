@@ -41,16 +41,10 @@ def format_minutes_offset(offset: int):
     return f'{hours:02}:{minutes:02}'
 
 
-def convert_datetime_to_timezone_inplace(data: list[dict], timezone) -> None:
-    for item in data:
-        for prop in item:
-            if isinstance(item[prop], datetime.datetime):
-                item[prop] = item[prop].astimezone(timezone)
-
-
 def activity_scatter(
-        activity_data: list[dict],
-        filter_expr: str | None, timezone_name: str | None) -> go.Figure:
+        activity_df: pandas.DataFrame,
+        filter_expr: str | None = None,
+        timezone_name: str | None = None) -> go.Figure:
     fig = go.Figure()
 
     title = 'Overview'
@@ -84,40 +78,39 @@ def activity_scatter(
 
     if timezone_name:
         LOGGER.info('converting timestamps to timezone "%s"', timezone_name)
-        timezone = pytz.timezone(timezone_name)
-        convert_datetime_to_timezone_inplace(activity_data, timezone)
+        activity_df['timestamp'] = activity_df['timestamp'].dt.tz_convert(timezone_name)
 
     # add time of the day fields
-    for item in activity_data:
-        item['time_of_day_minutes_offset'] = date_time_minutes_offset(item['timestamp'])
-        item['time_of_day'] = format_minutes_offset(item['time_of_day_minutes_offset'])
+    activity_df['time_of_day_minutes_offset'] = activity_df.apply(
+        lambda row: date_time_minutes_offset(row['timestamp']), axis=1)
+    activity_df['time_of_day'] = activity_df.apply(
+        lambda row: format_minutes_offset(row['time_of_day_minutes_offset']), axis=1)
 
     # initialize for missing authors
-    for item in activity_data:
-        if item['author'] is None:
-            item['author'] = 'Unknown'
+    activity_df['author'] = activity_df['author'].fillna('Unknown')
 
     # sort for predictable labels order for traces
-    activity_data.sort(
-        key=lambda x: (x['author'], x['source_type'], x['source_subtype'] or '', x['timestamp']))
+    activity_df = activity_df.sort_values(
+        by=['author', 'source_type', 'source_subtype', 'timestamp'])
 
     # apply filters if applicable
     if filter_expr:
-        count_before_filter = len(activity_data)
-        data = filter(activity_data, filter_expr)
-        count_after_filter = len(data)
-        LOGGER.info('filter "%s" left %d of %d data points', filter_expr, count_after_filter, count_before_filter)
+        count_before_filter = len(activity_df)
+        activity_df = apply_filter(activity_df, filter_expr)
+        count_after_filter = len(activity_df)
+        LOGGER.info(
+            'filter "%s" left %d of %d data points',
+            filter_expr, count_after_filter, count_before_filter)
 
-    LOGGER.info('data points to render: %d', len(activity_data))
+    LOGGER.info('data points to render: %d', len(activity_df))
 
-    if len(activity_data) == 0:
+    if len(activity_df) == 0:
         LOGGER.warning('no data to show')
         return fig
 
-    complete_df = pandas.DataFrame(activity_data)
-    complete_df['source_subtype'] = complete_df['source_subtype'].fillna('')
+    activity_df['source_subtype'] = activity_df['source_subtype'].fillna('')
 
-    grouped_df = complete_df.groupby(['author', 'activity_type'])
+    grouped_df = activity_df.groupby(['author', 'activity_type'])
 
     LOGGER.info('groups count: %s', grouped_df.ngroups)
 
@@ -158,9 +151,10 @@ def activity_scatter(
     return fig
 
 
-def filter(data: list[dict], expr: str):
-    compiled = compile(expr, 'filter', 'eval')
-    return [x for x in data if eval(compiled, x)]
+def apply_filter(df: pandas.DataFrame, expr: str) -> pandas.DataFrame:
+    local_vars = {col: df[col] for col in df.columns}
+    filtered_df = df.eval(expr, local_dict=local_vars)
+    return df[filtered_df]
 
 
 class OverviewReport(ReportBase):
@@ -174,11 +168,15 @@ class OverviewReport(ReportBase):
 
         filter_expr = read_optional(config, 'filter')
 
+        activity_df = pd.DataFrame(datasets.activity)
+        activity_df['timestamp'] = pandas.to_datetime(
+            activity_df['timestamp'], utc=True)
+
         render_widgets_report(
             out_path,
             [
                 activity_scatter(
-                    datasets.activity, filter_expr, config.get("timezone")
+                    activity_df, filter_expr, config.get("timezone")
                 ),
             ],
             title="overview",
