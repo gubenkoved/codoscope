@@ -212,8 +212,13 @@ class PerUserStatsReport(ReportBase):
 
         grouped_by_user = activity_data_frame.groupby(['author'])
 
+        processed_count = 0
         for (user_name, ), user_df in grouped_by_user:
             file_name = sanitize_filename(user_name)
             file_path = '%s.html' % os.path.join(parent_dir_path, file_name)
             LOGGER.debug('rendering report for user "%s"', user_name)
             self.generate_for_user(config, user_name, file_path, user_df)
+
+            processed_count += 1
+            if processed_count % 20 == 0:
+                LOGGER.info('processed %d of %d users', processed_count, len(grouped_by_user))

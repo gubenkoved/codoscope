@@ -5,6 +5,9 @@ import os.path
 LOGGER = logging.getLogger(__name__)
 
 
+NA_REPLACEMENT = 'unspecified'
+
+
 def date_time_minutes_offset(datetime):
     time = datetime.time()
     return time.hour * 60 + time.minute

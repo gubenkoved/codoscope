@@ -17,6 +17,7 @@ from codoscope.reports.common import (
     render_widgets_report,
     setup_default_layout,
 )
+from codoscope.common import NA_REPLACEMENT
 from codoscope.state import StateModel
 
 LOGGER = logging.getLogger(__name__)
@@ -88,20 +89,11 @@ def activity_scatter(
         lambda row: format_minutes_offset(row['time_of_day_minutes_offset']), axis=1)
 
     # initialize for missing authors
-    activity_df['author'] = activity_df['author'].fillna('Unknown')
+    activity_df['author'] = activity_df['author'].fillna(NA_REPLACEMENT)
 
     # sort for predictable labels order for traces
     activity_df = activity_df.sort_values(
         by=['author', 'source_type', 'source_subtype', 'timestamp'])
-
-    # apply filters if applicable
-    if filter_expr:
-        count_before_filter = len(activity_df)
-        activity_df = apply_filter(activity_df, filter_expr)
-        count_after_filter = len(activity_df)
-        LOGGER.info(
-            'filter "%s" left %d of %d data points',
-            filter_expr, count_after_filter, count_before_filter)
 
     LOGGER.debug('data points to render: %d', len(activity_df))
 
@@ -158,6 +150,78 @@ def apply_filter(df: pandas.DataFrame, expr: str) -> pandas.DataFrame:
     return df[filtered_df]
 
 
+def people_timeline(df: pandas.DataFrame) -> go.Figure:
+    df["author"] = df["author"].fillna(NA_REPLACEMENT)
+
+    timelines_df = (
+        df.groupby("author")
+        .agg({"timestamp": ["count", "min", "max"]})
+        .reset_index()
+    )
+    timelines_df.columns = ['user', 'count', 'first_timestamp', 'last_timestamp']
+    timelines_df = timelines_df.sort_values("first_timestamp", ascending=True)
+
+    timestamp_range = [
+        timelines_df["first_timestamp"].min(),
+        timelines_df["last_timestamp"].max(),
+    ]
+
+    fig = go.Figure()
+
+    # add line where start is equal to end timestamp
+    fig.add_trace(
+        go.Scatter(
+            x=timestamp_range,
+            y=timestamp_range,
+            mode='lines',
+            name='n/a',
+            showlegend=False,
+            opacity=0.4,
+            line=dict(
+                color='lightgray',
+                width=1,
+            ),
+            hoverinfo='none',
+        )
+    )
+
+    for _, row in timelines_df.iterrows():
+        user = row['user']
+
+        fig.add_trace(
+            go.Scatter(
+                x=[row['first_timestamp']],
+                y=[row['last_timestamp']],
+                mode='markers',
+                name=user,
+                marker=dict(
+                    symbol='x',
+                    size=8,
+                ),
+                opacity=0.9,
+                # TODO: count by activity!
+                text=[
+                    '<b>First:</b> {first}<br><b>Last:</b> {last}<br><b>Contributions:</b> {contributions}'.format(
+                        first=row['first_timestamp'].strftime('%Y-%m-%d %H:%M:%S'),
+                        last=row['last_timestamp'].strftime('%Y-%m-%d %H:%M:%S'),
+                        contributions=row['count'],
+                    ),
+                ],
+                hoverinfo='text+name',
+            )
+        )
+
+    setup_default_layout(fig, 'People Timeline')
+
+    fig.update_layout(
+        xaxis_title='First contribution',
+        yaxis_title='Last contribution',
+        showlegend=True,
+    )
+
+    return fig
+
+
 class OverviewReport(ReportBase):
     @classmethod
     def get_type(cls) -> ReportType:
@@ -171,14 +235,22 @@ class OverviewReport(ReportBase):
 
         activity_df = pd.DataFrame(datasets.activity)
 
+        # apply filters if applicable
+        if filter_expr:
+            count_before_filter = len(activity_df)
+            activity_df = apply_filter(activity_df, filter_expr)
+            count_after_filter = len(activity_df)
+            LOGGER.info(
+                'filter "%s" left %d of %d data points',
+                filter_expr, count_after_filter, count_before_filter)
+
         LOGGER.info('total data points: %d', len(activity_df))
 
         render_widgets_report(
             out_path,
             [
-                activity_scatter(
-                    activity_df, filter_expr, config.get("timezone")
-                ),
+                activity_scatter(activity_df, filter_expr, config.get("timezone")),
+                people_timeline(activity_df),
             ],
             title="overview",
         )
