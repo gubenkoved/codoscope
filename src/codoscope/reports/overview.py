@@ -2,6 +2,7 @@ import datetime
 import logging
 import os
 import os.path
+import math
 
 import pandas
 import pandas as pd
@@ -193,6 +194,8 @@ def people_timeline(df: pandas.DataFrame) -> go.Figure:
         for (activity_type, ), activity_df in user_grouped_by_activity:
             text_atoms.append("<br><b>%s:</b> %d" % (activity_type, len(activity_df)))
 
+        total_size_class = user_df['size_class'].sum()
+
         # single point per user
         fig.add_trace(
             go.Scatter(
@@ -202,9 +205,10 @@ def people_timeline(df: pandas.DataFrame) -> go.Figure:
                 name=user,
                 marker=dict(
                     symbol="x",
-                    size=8,
+                    # this is arbitrary, really
+                    size=4 + math.log(1 + (total_size_class / 16), 2),
                 ),
-                opacity=0.9,
+                opacity=0.8,
                 text=[
                     ''.join(text_atoms),
                 ],
