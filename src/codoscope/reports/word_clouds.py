@@ -49,7 +49,7 @@ class WordCloudsReport(ReportBase):
             'generating word clouds report (%sx%s) grouping period is "%s"',
             width, height, grouping_period)
 
-        df = pandas.DataFrame(datasets.activity)
+        df = datasets.activity
         df['timestamp'] = pandas.to_datetime(df['timestamp'], utc=True)
 
         grouped = df.groupby(df['timestamp'].dt.to_period(grouping_period))

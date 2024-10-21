@@ -4,7 +4,11 @@ import os.path
 import pandas
 import plotly.graph_objects as go
 
-from codoscope.common import sanitize_filename, ensure_dir
+from codoscope.common import (
+    sanitize_filename,
+    ensure_dir,
+    NA_REPLACEMENT,
+)
 from codoscope.config import read_mandatory
 from codoscope.datasets import Datasets
 from codoscope.reports.common import (
@@ -18,16 +22,13 @@ from codoscope.state import StateModel
 LOGGER = logging.getLogger(__name__)
 
 
-NAN_REPLACEMENT = 'unspecified'
-
-
 class PerSourceStatsReport(ReportBase):
     @classmethod
     def get_type(cls) -> ReportType:
         return ReportType.PER_SOURCE_STATS
 
     def weekly_stats(self, df: pandas.DataFrame) -> go.Figure:
-        df['activity_type'] = df['activity_type'].fillna(NAN_REPLACEMENT)
+        df['activity_type'] = df['activity_type'].fillna(NA_REPLACEMENT)
 
         grouped_by_activity = df.groupby(['activity_type'])
 
@@ -52,8 +53,8 @@ class PerSourceStatsReport(ReportBase):
         return fig
 
     def weekly_stats_by_user(self, df: pandas.DataFrame) -> go.Figure:
-        df['author'] = df['author'].fillna(NAN_REPLACEMENT)
-        df['activity_type'] = df['activity_type'].fillna(NAN_REPLACEMENT)
+        df['author'] = df['author'].fillna(NA_REPLACEMENT)
+        df['activity_type'] = df['activity_type'].fillna(NA_REPLACEMENT)
 
         sorted_df = df.sort_values(by=['author', 'activity_type'], ascending=True)
         grouped_by_user_activity = sorted_df.groupby(['author', 'activity_type'])
@@ -96,7 +97,7 @@ class PerSourceStatsReport(ReportBase):
         parent_dir_path = os.path.abspath(read_mandatory(config, 'dir-path'))
         ensure_dir(parent_dir_path)
 
-        activity_df = pandas.DataFrame(datasets.activity)
+        activity_df = datasets.activity
         activity_df['timestamp'] = pandas.to_datetime(
             activity_df['timestamp'], utc=True)
 

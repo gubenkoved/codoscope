@@ -2,8 +2,6 @@ import logging
 import os
 import os.path
 
-import pandas
-
 from codoscope.common import ensure_dir_for_path
 from codoscope.config import read_mandatory
 from codoscope.datasets import Datasets
@@ -26,8 +24,7 @@ class UniqueUsersReport(ReportBase):
         out_path = os.path.abspath(read_mandatory(config, "out-path"))
         ensure_dir_for_path(out_path)
 
-        df = pandas.DataFrame(datasets.activity)
-
+        df = datasets.activity
         df["author_email"] = df["author_email"].fillna('')
 
         groupped_df = (

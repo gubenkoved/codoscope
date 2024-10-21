@@ -84,18 +84,16 @@ def entrypoint():
         LOGGER.warning('skipped ingestion as requested')
 
     # extract data sets from the state
-    datasets = Datasets(state)
-    datasets.extract()
+    datasets = Datasets.extract(state)
     LOGGER.info('datasets extraction completed')
 
-    # TODO: make it more generic instead of dependency of specific named dataset
     for processor_config in config.get('processors', []):
         processor_name = processor_config['name']
         processor_type = processor_config['type']
         LOGGER.info('handling "%s" processor', processor_name)
         if processor_type == 'remap-users':
             processor = RemapUsersProcessor(processor_config)
-            processor.execute(datasets.activity)
+            processor.execute(datasets)
         else:
             raise ConfigError('unknown processor type: "%s"' % processor_type)
 

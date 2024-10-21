@@ -230,7 +230,7 @@ class OverviewReport(ReportBase):
         # TODO: include somewhere in the report filter and timezone used
         filter_expr = read_optional(config, 'filter')
 
-        activity_df = pd.DataFrame(datasets.activity)
+        activity_df = datasets.activity
         activity_df = convert_timestamp_timezone(activity_df, config.get("timezone"))
 
         # apply filters if applicable

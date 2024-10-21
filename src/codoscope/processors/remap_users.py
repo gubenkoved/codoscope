@@ -1,6 +1,7 @@
 import logging
 
 from codoscope.exceptions import ConfigError
+from codoscope.datasets import Datasets
 
 LOGGER = logging.getLogger(__name__)
 
@@ -25,19 +26,20 @@ class RemapUsersProcessor:
                             raise ConfigError('Email already mapped: "%s"' % alias)
                         self.email_to_canonical_name_map[alias] = canonical_name
 
-    def execute(self, dataset: list[dict]):
+    def execute(self, datasets: Datasets):
         remapped_items_count = 0
-        for item in dataset:
-            author = item.get('author')
-            author_email = item.get('author_email')
+        df = datasets.activity
+        for index, row in df.iterrows():
+            author = row['author']
+            author_email = row['author_email']
 
             if author_email and author_email in self.email_to_canonical_name_map:
-                item['author'] = self.email_to_canonical_name_map[author_email]
+                df.at[index, 'author'] = self.email_to_canonical_name_map[author_email]
                 remapped_items_count += 1
                 continue
 
             if author and author in self.name_to_canonical_name_map:
-                item['author'] = self.name_to_canonical_name_map[author]
+                df.at[index, 'author'] = self.name_to_canonical_name_map[author]
                 remapped_items_count += 1
                 continue
 

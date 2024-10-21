@@ -1,5 +1,6 @@
 import logging
 import math
+import pandas
 
 from codoscope.sources.bitbucket import BitbucketState
 from codoscope.sources.git import RepoModel
@@ -10,16 +11,17 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Datasets:
-    def __init__(self, state: StateModel):
-        self.state = state
-        # TODO: return pandas.DataFrame instead
-        self.activity: list[dict] | None = None
+    def __init__(self, activity: pandas.DataFrame) -> None:
+        self.activity: pandas.DataFrame = activity
 
-    def extract(self):
-        self.activity = extract_activity(self.state)
+    @classmethod
+    def extract(cls, state: StateModel) -> "Datasets":
+        return Datasets(
+            extract_activity(state)
+        )
 
 
-def extract_activity(state: StateModel) -> list[dict]:
+def extract_activity(state: StateModel) -> pandas.DataFrame:
     data = []
 
     for source_name, source in state.sources.items():
@@ -70,7 +72,7 @@ def extract_activity(state: StateModel) -> list[dict]:
                                 'activity_type': 'approved pr',
                                 'timestamp': participant.participated_on,
                                 'size_class': 8,
-                                'author': participant.user.display_name,
+                                'author': participant.user.display_name if participant.user else None,
                                 'bitbucket_pr_title': pr.title,
                                 'bitbucket_pr_id': pr.id,
                                 'bitbucket_pr_url': pr.url,
@@ -88,7 +90,7 @@ def extract_activity(state: StateModel) -> list[dict]:
                                 'activity_type': 'pr comment',
                                 'timestamp': comment.created_on,
                                 'size_class': 4 if is_answering_your_own_pr else 6,
-                                'author': comment.author.display_name,
+                                'author': comment.author.display_name if comment.author else None,
                                 'bitbucket_is_answering_your_own_pr': is_answering_your_own_pr,
                                 'bitbucket_pr_title': pr.title,
                                 'bitbucket_pr_id': pr.id,
@@ -126,4 +128,6 @@ def extract_activity(state: StateModel) -> list[dict]:
         else:
             LOGGER.warning('skipping source "%s" of type "%s"', source_name, source.source_type)
 
-    return data
+    df = pandas.DataFrame(data)
+
+    return df
