@@ -44,7 +44,7 @@ def format_minutes_offset(offset: int):
 def activity_scatter(
         activity_df: pandas.DataFrame,
         filter_expr: str | None = None,
-        timezone_name: str | None = None) -> go.Figure:
+        timezone_name: str | None = None) -> go.Figure | None:
     fig = go.Figure()
 
     title = 'Overview'
@@ -106,8 +106,8 @@ def activity_scatter(
     LOGGER.debug('data points to render: %d', len(activity_df))
 
     if len(activity_df) == 0:
-        LOGGER.warning('no data to show')
-        return fig
+        LOGGER.debug('no data to show')
+        return None
 
     activity_df['source_subtype'] = activity_df['source_subtype'].fillna('')
 
