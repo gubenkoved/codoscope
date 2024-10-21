@@ -77,7 +77,7 @@ def activity_scatter(
     )
 
     if timezone_name:
-        LOGGER.info('converting timestamps to timezone "%s"', timezone_name)
+        LOGGER.debug('converting timestamps to timezone "%s"', timezone_name)
         activity_df['timestamp'] = pandas.to_datetime(activity_df['timestamp'], utc=True)
         activity_df['timestamp'] = activity_df['timestamp'].dt.tz_convert(timezone_name)
 
@@ -103,7 +103,7 @@ def activity_scatter(
             'filter "%s" left %d of %d data points',
             filter_expr, count_after_filter, count_before_filter)
 
-    LOGGER.info('data points to render: %d', len(activity_df))
+    LOGGER.debug('data points to render: %d', len(activity_df))
 
     if len(activity_df) == 0:
         LOGGER.warning('no data to show')
@@ -113,7 +113,7 @@ def activity_scatter(
 
     grouped_df = activity_df.groupby(['author', 'activity_type'])
 
-    LOGGER.info('groups count: %s', grouped_df.ngroups)
+    LOGGER.debug('groups count: %s', grouped_df.ngroups)
 
     hover_data_columns = [
         'commit_sha',
@@ -170,6 +170,8 @@ class OverviewReport(ReportBase):
         filter_expr = read_optional(config, 'filter')
 
         activity_df = pd.DataFrame(datasets.activity)
+
+        LOGGER.info('total data points: %d', len(activity_df))
 
         render_widgets_report(
             out_path,
