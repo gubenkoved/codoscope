@@ -151,19 +151,11 @@ def apply_filter(df: pandas.DataFrame, expr: str) -> pandas.DataFrame:
 
 
 def people_timeline(df: pandas.DataFrame) -> go.Figure:
-    df["author"] = df["author"].fillna(NA_REPLACEMENT)
-
-    timelines_df = (
-        df.groupby("author")
-        .agg({"timestamp": ["count", "min", "max"]})
-        .reset_index()
-    )
-    timelines_df.columns = ['user', 'count', 'first_timestamp', 'last_timestamp']
-    timelines_df = timelines_df.sort_values("first_timestamp", ascending=True)
+    df['author'] = df['author'].fillna(NA_REPLACEMENT)
 
     timestamp_range = [
-        timelines_df["first_timestamp"].min(),
-        timelines_df["last_timestamp"].max(),
+        df['timestamp'].min(),
+        df['timestamp'].max(),
     ]
 
     fig = go.Figure()
@@ -185,29 +177,39 @@ def people_timeline(df: pandas.DataFrame) -> go.Figure:
         )
     )
 
-    for _, row in timelines_df.iterrows():
-        user = row['user']
+    grouped_by_user = df.sort_values("timestamp", ascending=True).groupby(["author"])
 
+    for (user, ), user_df in grouped_by_user:
+        first_timestamp = user_df['timestamp'].min()
+        last_timestamp = user_df['timestamp'].max()
+
+        text_atoms = [
+            "<b>first:</b> %s<br>" % first_timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+            "<b>last:</b> %s<br>" % last_timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+        ]
+
+        # compute totals per activity
+        user_grouped_by_activity = user_df.groupby(['activity_type'])
+        for (activity_type, ), activity_df in user_grouped_by_activity:
+            text_atoms.append("<br><b>%s:</b> %d" % (activity_type, len(activity_df)))
+
+        # single point per user
         fig.add_trace(
             go.Scatter(
-                x=[row['first_timestamp']],
-                y=[row['last_timestamp']],
-                mode='markers',
+                x=[first_timestamp],
+                y=[last_timestamp],
+                mode="markers",
                 name=user,
                 marker=dict(
-                    symbol='x',
+                    symbol="x",
                     size=8,
                 ),
                 opacity=0.9,
-                # TODO: count by activity!
                 text=[
-                    '<b>First:</b> {first}<br><b>Last:</b> {last}<br><b>Contributions:</b> {contributions}'.format(
-                        first=row['first_timestamp'].strftime('%Y-%m-%d %H:%M:%S'),
-                        last=row['last_timestamp'].strftime('%Y-%m-%d %H:%M:%S'),
-                        contributions=row['count'],
-                    ),
+                    ''.join(text_atoms),
                 ],
-                hoverinfo='text+name',
+                hovertemplate="%{text}",
+                hoverinfo="text+name",
             )
         )
 
