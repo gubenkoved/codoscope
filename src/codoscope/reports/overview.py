@@ -1,24 +1,25 @@
-import datetime
 import logging
+import math
 import os
 import os.path
-import math
 
 import pandas
 import pandas as pd
 import plotly.graph_objects as go
-import pytz
 
-from codoscope.common import date_time_minutes_offset, ensure_dir_for_path
+from codoscope.common import (
+    NA_REPLACEMENT,
+    date_time_minutes_offset,
+    ensure_dir_for_path,
+)
 from codoscope.config import read_mandatory, read_optional
 from codoscope.datasets import Datasets
 from codoscope.reports.common import (
     ReportBase,
     ReportType,
     render_widgets_report,
-    setup_default_layout,
+    setup_default_layout
 )
-from codoscope.common import NA_REPLACEMENT
 from codoscope.state import StateModel
 
 LOGGER = logging.getLogger(__name__)
@@ -43,23 +44,10 @@ def format_minutes_offset(offset: int):
     return f'{hours:02}:{minutes:02}'
 
 
-def activity_scatter(
-        activity_df: pandas.DataFrame,
-        filter_expr: str | None = None,
-        timezone_name: str | None = None) -> go.Figure | None:
+def activity_scatter(activity_df: pandas.DataFrame) -> go.Figure | None:
     fig = go.Figure()
 
     title = 'Overview'
-    title_extra = []
-
-    if filter_expr:
-        title_extra.append('filtered by "%s"' % filter_expr)
-
-    if timezone_name:
-        title_extra.append('timezone normalized to "%s"' % timezone_name)
-
-    if title_extra:
-        title += ' (%s)' % ', '.join(title_extra)
 
     setup_default_layout(
         fig,
@@ -77,11 +65,6 @@ def activity_scatter(
         ),
         xaxis_title='Timestamp',
     )
-
-    if timezone_name:
-        LOGGER.debug('converting timestamps to timezone "%s"', timezone_name)
-        activity_df['timestamp'] = pandas.to_datetime(activity_df['timestamp'], utc=True)
-        activity_df['timestamp'] = activity_df['timestamp'].dt.tz_convert(timezone_name)
 
     # add time of the day fields
     activity_df['time_of_day_minutes_offset'] = activity_df.apply(
@@ -228,6 +211,13 @@ def people_timeline(df: pandas.DataFrame) -> go.Figure:
     return fig
 
 
+def convert_timestamp_timezone(df: pandas.DataFrame, timezone_name: str | None) -> pandas.DataFrame:
+    if timezone_name:
+        LOGGER.debug('converting timestamps to timezone "%s"', timezone_name)
+        df["timestamp"] = pandas.to_datetime(df["timestamp"], utc=True)
+        df["timestamp"] = df["timestamp"].dt.tz_convert(timezone_name)
+    return df
+
 class OverviewReport(ReportBase):
     @classmethod
     def get_type(cls) -> ReportType:
@@ -237,9 +227,11 @@ class OverviewReport(ReportBase):
         out_path = os.path.abspath(read_mandatory(config, 'out-path'))
         ensure_dir_for_path(out_path)
 
+        # TODO: include somewhere in the report filter and timezone used
         filter_expr = read_optional(config, 'filter')
 
         activity_df = pd.DataFrame(datasets.activity)
+        activity_df = convert_timestamp_timezone(activity_df, config.get("timezone"))
 
         # apply filters if applicable
         if filter_expr:
@@ -255,7 +247,7 @@ class OverviewReport(ReportBase):
         render_widgets_report(
             out_path,
             [
-                activity_scatter(activity_df, filter_expr, config.get("timezone")),
+                activity_scatter(activity_df),
                 people_timeline(activity_df),
             ],
             title="overview",

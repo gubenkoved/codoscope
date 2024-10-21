@@ -17,9 +17,7 @@ from codoscope.reports.common import (
 from codoscope.reports.word_clouds import (
     render_word_cloud_html,
 )
-from codoscope.reports.overview import (
-    activity_scatter,
-)
+from codoscope.reports.overview import activity_scatter, convert_timestamp_timezone
 from codoscope.state import StateModel
 
 LOGGER = logging.getLogger(__name__)
@@ -189,11 +187,11 @@ class PerUserStatsReport(ReportBase):
 
         return fig
 
-    def generate_for_user(self, config: dict, user_name: str, report_path: str, df: pandas.DataFrame):
+    def generate_for_user(self, user_name: str, report_path: str, df: pandas.DataFrame) -> None:
         render_widgets_report(
             report_path,
             [
-                activity_scatter(df, timezone_name=config.get("timezone")),
+                activity_scatter(df),
                 self.weekly_stats(df),
                 self.line_counts_stats(df),
                 self.emails_timeline(df),
@@ -206,18 +204,18 @@ class PerUserStatsReport(ReportBase):
         parent_dir_path = os.path.abspath(read_mandatory(config, 'dir-path'))
         ensure_dir(parent_dir_path)
 
-        activity_data_frame = pandas.DataFrame(datasets.activity)
-        activity_data_frame['timestamp'] = pandas.to_datetime(
-            activity_data_frame['timestamp'], utc=True)
+        activity_df = pandas.DataFrame(datasets.activity)
+        activity_df['timestamp'] = pandas.to_datetime(activity_df['timestamp'], utc=True)
+        activity_df = convert_timestamp_timezone(activity_df, config.get("timezone"))
 
-        grouped_by_user = activity_data_frame.groupby(['author'])
+        grouped_by_user = activity_df.groupby(['author'])
 
         processed_count = 0
         for (user_name, ), user_df in grouped_by_user:
             file_name = sanitize_filename(user_name)
             file_path = '%s.html' % os.path.join(parent_dir_path, file_name)
             LOGGER.debug('rendering report for user "%s"', user_name)
-            self.generate_for_user(config, user_name, file_path, user_df)
+            self.generate_for_user(user_name, file_path, user_df)
 
             processed_count += 1
             if processed_count % 20 == 0:

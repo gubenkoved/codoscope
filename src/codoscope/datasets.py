@@ -12,6 +12,7 @@ LOGGER = logging.getLogger(__name__)
 class Datasets:
     def __init__(self, state: StateModel):
         self.state = state
+        # TODO: return pandas.DataFrame instead
         self.activity: list[dict] | None = None
 
     def extract(self):
