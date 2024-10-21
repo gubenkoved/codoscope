@@ -78,6 +78,7 @@ def activity_scatter(
 
     if timezone_name:
         LOGGER.info('converting timestamps to timezone "%s"', timezone_name)
+        activity_df['timestamp'] = pandas.to_datetime(activity_df['timestamp'], utc=True)
         activity_df['timestamp'] = activity_df['timestamp'].dt.tz_convert(timezone_name)
 
     # add time of the day fields
@@ -169,8 +170,6 @@ class OverviewReport(ReportBase):
         filter_expr = read_optional(config, 'filter')
 
         activity_df = pd.DataFrame(datasets.activity)
-        activity_df['timestamp'] = pandas.to_datetime(
-            activity_df['timestamp'], utc=True)
 
         render_widgets_report(
             out_path,
