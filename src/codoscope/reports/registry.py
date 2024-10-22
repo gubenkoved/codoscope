@@ -1,4 +1,5 @@
 from codoscope.reports.common import ReportBase, ReportType
+from codoscope.reports.datasets_export import DatasetsExportReport
 from codoscope.reports.internal_state import InternalStateReport
 from codoscope.reports.overview import OverviewReport
 from codoscope.reports.per_source_stats import PerSourceStatsReport
@@ -13,6 +14,7 @@ REPORTS: list[type[ReportBase]] = [
     PerSourceStatsReport,
     UniqueUsersReport,
     WordCloudsReport,
+    DatasetsExportReport,
 ]
 
 REPORTS_BY_TYPE: dict[ReportType, type[ReportBase]] = {

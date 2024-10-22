@@ -16,6 +16,7 @@ class ReportType(enum.StrEnum):
     PER_USER_STATS = "per-user-stats"
     PER_SOURCE_STATS = "per-source-stats"
     UNIQUE_USERS = "unique-users"
+    DATASETS_EXPORT = "datasets-export"
     WORD_CLOUDS = "word-clouds"
     INDEX = "index"
 
