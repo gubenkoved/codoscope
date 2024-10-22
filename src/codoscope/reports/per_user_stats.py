@@ -191,7 +191,7 @@ class PerUserStatsReport(ReportBase):
         render_widgets_report(
             report_path,
             [
-                activity_scatter(df),
+                activity_scatter(df, extended_mode=True),
                 self.weekly_stats(df),
                 self.line_counts_stats(df),
                 self.emails_timeline(df),

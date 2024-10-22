@@ -3,6 +3,7 @@ import math
 import os
 import os.path
 
+import textwrap
 import pandas
 import pandas as pd
 import plotly.graph_objects as go
@@ -44,7 +45,18 @@ def format_minutes_offset(offset: int):
     return f'{hours:02}:{minutes:02}'
 
 
-def activity_scatter(activity_df: pandas.DataFrame) -> go.Figure | None:
+def limit_text_len(text: str, max_len: int) -> str:
+    if len(text) > max_len:
+        return text[:max_len - 3] + '...'
+    return text
+
+
+HOVER_TEXT_MAX_ITEM_LEN = 1000
+HOVER_TEXT_WRAP_WIDTH = 140
+
+
+def activity_scatter(
+        activity_df: pandas.DataFrame, extended_mode: bool = False) -> go.Figure | None:
     fig = go.Figure()
 
     title = 'Overview'
@@ -91,11 +103,19 @@ def activity_scatter(activity_df: pandas.DataFrame) -> go.Figure | None:
 
     LOGGER.debug('groups count: %s', grouped_df.ngroups)
 
-    hover_data_columns = [
-        'commit_sha',
-        'bitbucket_pr_title',
-        'jira_item_key',
-    ]
+    # column name to label map
+    hover_data_columns_map = {
+        'commit_sha': None,
+        'bitbucket_pr_title': None,
+        'jira_item_key': None,
+    }
+
+    if extended_mode:
+        hover_data_columns_map['commit_added_lines'] = 'added lines'
+        hover_data_columns_map['commit_removed_lines'] = 'removed lines'
+        hover_data_columns_map['commit_message'] = 'commit message'
+        hover_data_columns_map['jira_summary'] = 'summary'
+        # hover_data_columns_map['jira_message'] = 'message'
 
     for (author, activity_type), df in grouped_df:
         name = '%s %s' % (author, activity_type)
@@ -104,10 +124,19 @@ def activity_scatter(activity_df: pandas.DataFrame) -> go.Figure | None:
         texts = []
         for row in df.itertuples():
             text_item = f'<b>{row.source_name}</b><br>'
-            for col in hover_data_columns:
-                col_val = getattr(row, col, None)
+            for col_name, col_label in hover_data_columns_map.items():
+                col_val = getattr(row, col_name, None)
                 if col_val and not pd.isna(col_val):
-                    text_item += '%s<br>' % col_val
+                    if col_label:
+                        text_item += '<b>%s</b>: %s<br>' % (col_label, col_val)
+                    else:  # no column label
+                        text_item += '%s<br>' % col_val
+                    text_item = limit_text_len(text_item, HOVER_TEXT_MAX_ITEM_LEN)
+                    # split into lines to avoid too long hover text
+                    text_item_lines = textwrap.wrap(
+                        text_item, break_long_words=False, break_on_hyphens=False,
+                        width=HOVER_TEXT_WRAP_WIDTH)
+                    text_item = '<br>'.join(text_item_lines)
             texts.append(text_item)
 
         trace = go.Scattergl(
