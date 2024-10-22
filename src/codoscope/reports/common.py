@@ -100,7 +100,7 @@ def render_html_report(path: str, body: str, title: str) -> None:
             font-family: "Ubuntu";
             overflow-y: scroll; /* Always show vertical scrollbar */
         }
-        
+
         .loader-wrapper {
             position: fixed;
             top: 0;
@@ -173,3 +173,16 @@ def render_widgets_report(
             raise Exception('unknown widget type "%s"' % type(widget))
         body_items.append(html)
     render_html_report(path, '\n'.join(body_items), title)
+
+
+def time_axis(steps=24):
+    valess = []
+    labels = []
+
+    for offset in range(0, 24 * 60 + 1, 24 * 60 // steps):
+        hours = offset // 60
+        minutes = offset % 60
+        valess.append(offset)
+        labels.append(f'{hours:02}:{minutes:02}')
+
+    return valess, labels

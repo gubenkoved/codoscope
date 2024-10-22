@@ -13,6 +13,12 @@ def date_time_minutes_offset(datetime):
     return time.hour * 60 + time.minute
 
 
+def format_minutes_offset(offset: int) -> str:
+    hours = offset // 60
+    minutes = offset % 60
+    return f'{hours:02}:{minutes:02}'
+
+
 def sanitize_filename(string: str) -> str:
     """
     Given arbitrary string returns string that is safe to be used

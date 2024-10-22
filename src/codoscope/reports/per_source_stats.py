@@ -17,7 +17,10 @@ from codoscope.reports.common import (
     setup_default_layout,
     render_widgets_report,
 )
-from codoscope.state import StateModel
+from codoscope.widgets.line_counts_stats import (
+    line_counts_stats,
+)
+from codoscope.state import StateModel, SourceType
 
 LOGGER = logging.getLogger(__name__)
 
@@ -28,6 +31,7 @@ class PerSourceStatsReport(ReportBase):
         return ReportType.PER_SOURCE_STATS
 
     def weekly_stats(self, df: pandas.DataFrame) -> go.Figure:
+        df = df.set_index('timestamp')
         df['activity_type'] = df['activity_type'].fillna(NA_REPLACEMENT)
 
         grouped_by_activity = df.groupby(['activity_type'])
@@ -53,6 +57,7 @@ class PerSourceStatsReport(ReportBase):
         return fig
 
     def weekly_stats_by_user(self, df: pandas.DataFrame) -> go.Figure:
+        df = df.set_index('timestamp')
         df['author'] = df['author'].fillna(NA_REPLACEMENT)
         df['activity_type'] = df['activity_type'].fillna(NA_REPLACEMENT)
 
@@ -82,14 +87,19 @@ class PerSourceStatsReport(ReportBase):
 
         return fig
 
-    def generate_for_source(self, source_name: str, report_path: str, df: pandas.DataFrame):
-        df.set_index('timestamp', inplace=True)
+    def generate_for_source(self, state: StateModel, source_name: str, report_path: str, df: pandas.DataFrame):
+        widgets: list[go.Figure | None] = [
+            self.weekly_stats(df),
+            self.weekly_stats_by_user(df),
+        ]
+
+        source_state = state.sources[source_name]
+        if source_state.source_type == SourceType.GIT:
+            widgets.append(line_counts_stats(df, agg_period='W', title='Weekly Line Counts'))
+
         render_widgets_report(
             report_path,
-            [
-                self.weekly_stats(df),
-                self.weekly_stats_by_user(df),
-            ],
+            widgets,
             title=f"source :: {source_name}",
         )
 
@@ -107,4 +117,4 @@ class PerSourceStatsReport(ReportBase):
             file_name = sanitize_filename(source_name)
             file_path = '%s.html' % os.path.join(parent_dir_path, file_name)
             LOGGER.info('rendering report for "%s"', source_name)
-            self.generate_for_source(source_name, file_path, source_df)
+            self.generate_for_source(state, source_name, file_path, source_df)

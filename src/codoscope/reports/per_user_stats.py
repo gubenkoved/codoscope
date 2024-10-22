@@ -17,6 +17,9 @@ from codoscope.reports.common import (
 from codoscope.reports.word_clouds import (
     render_word_cloud_html,
 )
+from codoscope.widgets.line_counts_stats import (
+    line_counts_stats,
+)
 from codoscope.reports.overview import activity_scatter, convert_timestamp_timezone
 from codoscope.state import StateModel
 
@@ -51,57 +54,6 @@ class PerUserStatsReport(ReportBase):
             showlegend=True,  # ensure legend even for single series
             margin=dict(
                 t=50,
-            ),
-        )
-
-        return fig
-
-    def line_counts_stats(self, df: pandas.DataFrame) -> go.Figure | None:
-        df = df.set_index('timestamp')
-
-        # filter leaving only commits
-        df = df[df['activity_type'] == 'commit']
-
-        if len(df) == 0:
-            return None
-
-        resampled_df = df.resample('W').agg({
-            'commit_added_lines': 'sum',
-            'commit_removed_lines': 'sum',
-        })
-
-        resampled_df['timestamp'] = resampled_df.index
-
-        fig = go.Figure()
-
-        fig.add_trace(
-            go.Bar(
-                name=f"lines added",
-                x=resampled_df["timestamp"],
-                y=resampled_df["commit_added_lines"],
-                marker_color="#2296bf",  # blue-ish
-            )
-        )
-        fig.add_trace(
-            go.Bar(
-                name=f"lines removed",
-                x=resampled_df["timestamp"],
-                y=resampled_df["commit_removed_lines"],
-                marker_color="#e25548",  # red-ish
-            )
-        )
-
-        setup_default_layout(fig, 'Weekly Line Counts')
-
-        fig.update_layout(
-            # yaxis_type="log",
-            barmode="group",
-            height=600,
-            margin=dict(
-                t=50,
-            ),
-            yaxis=dict(
-                type="log",
             ),
         )
 
@@ -193,7 +145,7 @@ class PerUserStatsReport(ReportBase):
             [
                 activity_scatter(df, extended_mode=True),
                 self.weekly_stats(df),
-                self.line_counts_stats(df),
+                line_counts_stats(df, agg_period='W', title='Weekly Line Counts'),
                 self.emails_timeline(df),
                 self.commit_themes_wordcloud(df),
             ],
