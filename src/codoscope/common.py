@@ -5,7 +5,7 @@ import os.path
 LOGGER = logging.getLogger(__name__)
 
 
-NA_REPLACEMENT = 'unspecified'
+NA_REPLACEMENT = "unspecified"
 
 
 def date_time_minutes_offset(datetime):
@@ -16,7 +16,7 @@ def date_time_minutes_offset(datetime):
 def format_minutes_offset(offset: int) -> str:
     hours = offset // 60
     minutes = offset % 60
-    return f'{hours:02}:{minutes:02}'
+    return f"{hours:02}:{minutes:02}"
 
 
 def sanitize_filename(string: str) -> str:

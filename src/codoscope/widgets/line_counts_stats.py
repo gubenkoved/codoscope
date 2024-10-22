@@ -5,23 +5,24 @@ from codoscope.reports.common import setup_default_layout
 
 
 def line_counts_stats(
-        acvitiy_df: pandas.DataFrame,
-        agg_period: str = 'W',
-        title: str | None = None) -> go.Figure | None:
-    df = acvitiy_df.set_index('timestamp')
+    acvitiy_df: pandas.DataFrame, agg_period: str = "W", title: str | None = None
+) -> go.Figure | None:
+    df = acvitiy_df.set_index("timestamp")
 
     # filter leaving only commits
-    df = df[df['activity_type'] == 'commit']
+    df = df[df["activity_type"] == "commit"]
 
     if len(df) == 0:
         return None
 
-    resampled_df = df.resample(agg_period).agg({
-        'commit_added_lines': 'sum',
-        'commit_removed_lines': 'sum',
-    })
+    resampled_df = df.resample(agg_period).agg(
+        {
+            "commit_added_lines": "sum",
+            "commit_removed_lines": "sum",
+        }
+    )
 
-    resampled_df['timestamp'] = resampled_df.index
+    resampled_df["timestamp"] = resampled_df.index
 
     fig = go.Figure()
 
@@ -42,7 +43,7 @@ def line_counts_stats(
         )
     )
 
-    setup_default_layout(fig, title or 'Line counts')
+    setup_default_layout(fig, title or "Line counts")
 
     fig.update_layout(
         # yaxis_type="log",

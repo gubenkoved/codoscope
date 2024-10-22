@@ -11,13 +11,13 @@ from codoscope.state import StateModel
 
 
 class ReportType(enum.StrEnum):
-    OVERVIEW = 'overview'
-    INTERNAL_STATE = 'internal-state'
-    PER_USER_STATS = 'per-user-stats'
-    PER_SOURCE_STATS = 'per-source-stats'
-    UNIQUE_USERS = 'unique-users'
-    WORD_CLOUDS = 'word-clouds'
-    INDEX = 'index'
+    OVERVIEW = "overview"
+    INTERNAL_STATE = "internal-state"
+    PER_USER_STATS = "per-user-stats"
+    PER_SOURCE_STATS = "per-source-stats"
+    UNIQUE_USERS = "unique-users"
+    WORD_CLOUDS = "word-clouds"
+    INDEX = "index"
 
 
 class ReportBase(abc.ABC):
@@ -35,48 +35,48 @@ class ReportBase(abc.ABC):
 def setup_default_layout(fig: go.Figure, title: str | None = None) -> None:
     fig.update_layout(
         title=title,
-        title_font_family='Ubuntu',
+        title_font_family="Ubuntu",
         # title_font_variant='small-caps',
-        font_family='Ubuntu',
-        plot_bgcolor='white',
+        font_family="Ubuntu",
+        plot_bgcolor="white",
         xaxis=dict(
             showgrid=True,
-            gridcolor='lightgray',
+            gridcolor="lightgray",
             gridwidth=1,
-            griddash='dot',
+            griddash="dot",
             nticks=30,
         ),
         yaxis=dict(
             showgrid=True,
-            gridcolor='lightgray',
+            gridcolor="lightgray",
             gridwidth=1,
-            griddash='dot',
+            griddash="dot",
             nticks=20,
         ),
         shapes=[  # Add an outer border
             dict(
-                type='rect',
-                xref='paper',
-                yref='paper',  # Reference the entire paper (plot area)
+                type="rect",
+                xref="paper",
+                yref="paper",  # Reference the entire paper (plot area)
                 x0=0,
                 y0=0,
                 x1=1,
                 y1=1,
                 line=dict(
-                    color='gray',
+                    color="gray",
                     width=1.2,
                 ),
             )
         ],
         legend=dict(
-            traceorder='normal',  # use the order in which traces were added
+            traceorder="normal",  # use the order in which traces were added
         ),
     )
 
     fig.update_layout(
         hoverlabel=dict(
             font_size=12,
-            font_family='Ubuntu',
+            font_family="Ubuntu",
         )
     )
 
@@ -150,29 +150,33 @@ def render_html_report(path: str, body: str, title: str) -> None:
 """
 
     html = (
-        html.replace('##TITLE##', title)
-        .replace('##BODY##', body)
-        .replace('##GENERATED_ON##', '%s %s' % (now.strftime('%B %d, %Y at %H:%M:%S'), tz_name))
+        html.replace("##TITLE##", title)
+        .replace("##BODY##", body)
+        .replace(
+            "##GENERATED_ON##",
+            "%s %s" % (now.strftime("%B %d, %Y at %H:%M:%S"), tz_name),
+        )
     )
 
-    with open(path, 'w') as f:
+    with open(path, "w") as f:
         f.write(html)
 
 
 def render_widgets_report(
-        path: str, widgets: typing.Iterable[go.Figure | str | None], title: str) -> None:
+    path: str, widgets: typing.Iterable[go.Figure | str | None], title: str
+) -> None:
     body_items = []
     for widget in widgets:
         if widget is None:
             continue
         if isinstance(widget, go.Figure):
-            html = widget.to_html(full_html=False, include_plotlyjs='cdn')
+            html = widget.to_html(full_html=False, include_plotlyjs="cdn")
         elif isinstance(widget, str):
             html = widget
         else:
             raise Exception('unknown widget type "%s"' % type(widget))
         body_items.append(html)
-    render_html_report(path, '\n'.join(body_items), title)
+    render_html_report(path, "\n".join(body_items), title)
 
 
 def time_axis(steps=24):
@@ -183,6 +187,6 @@ def time_axis(steps=24):
         hours = offset // 60
         minutes = offset % 60
         valess.append(offset)
-        labels.append(f'{hours:02}:{minutes:02}')
+        labels.append(f"{hours:02}:{minutes:02}")
 
     return valess, labels

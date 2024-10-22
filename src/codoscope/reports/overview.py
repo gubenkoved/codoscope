@@ -6,10 +6,7 @@ import os.path
 import pandas
 import plotly.graph_objects as go
 
-from codoscope.common import (
-    NA_REPLACEMENT,
-    ensure_dir_for_path,
-)
+from codoscope.common import NA_REPLACEMENT, ensure_dir_for_path
 from codoscope.config import read_mandatory, read_optional
 from codoscope.datasets import Datasets
 from codoscope.reports.common import (
@@ -18,11 +15,10 @@ from codoscope.reports.common import (
     render_widgets_report,
     setup_default_layout,
 )
-from codoscope.widgets.activity_scatter import activity_scatter
 from codoscope.state import StateModel
+from codoscope.widgets.activity_scatter import activity_scatter
 
 LOGGER = logging.getLogger(__name__)
-
 
 
 def apply_filter(df: pandas.DataFrame, expr: str) -> pandas.DataFrame:
@@ -32,11 +28,11 @@ def apply_filter(df: pandas.DataFrame, expr: str) -> pandas.DataFrame:
 
 
 def people_timeline(df: pandas.DataFrame) -> go.Figure:
-    df['author'] = df['author'].fillna(NA_REPLACEMENT)
+    df["author"] = df["author"].fillna(NA_REPLACEMENT)
 
     timestamp_range = [
-        df['timestamp'].min(),
-        df['timestamp'].max(),
+        df["timestamp"].min(),
+        df["timestamp"].max(),
     ]
 
     fig = go.Figure()
@@ -46,23 +42,23 @@ def people_timeline(df: pandas.DataFrame) -> go.Figure:
         go.Scatter(
             x=timestamp_range,
             y=timestamp_range,
-            mode='lines',
-            name='n/a',
+            mode="lines",
+            name="n/a",
             showlegend=False,
             opacity=0.4,
             line=dict(
-                color='lightgray',
+                color="lightgray",
                 width=1,
             ),
-            hoverinfo='none',
+            hoverinfo="none",
         )
     )
 
     grouped_by_user = df.sort_values("timestamp", ascending=True).groupby(["author"])
 
-    for (user, ), user_df in grouped_by_user:
-        first_timestamp = user_df['timestamp'].min()
-        last_timestamp = user_df['timestamp'].max()
+    for (user,), user_df in grouped_by_user:
+        first_timestamp = user_df["timestamp"].min()
+        last_timestamp = user_df["timestamp"].max()
 
         text_atoms = [
             "<b>first:</b> %s<br>" % first_timestamp.strftime("%Y-%m-%d %H:%M:%S"),
@@ -70,11 +66,11 @@ def people_timeline(df: pandas.DataFrame) -> go.Figure:
         ]
 
         # compute totals per activity
-        user_grouped_by_activity = user_df.groupby(['activity_type'])
-        for (activity_type, ), activity_df in user_grouped_by_activity:
+        user_grouped_by_activity = user_df.groupby(["activity_type"])
+        for (activity_type,), activity_df in user_grouped_by_activity:
             text_atoms.append("<br><b>%s:</b> %d" % (activity_type, len(activity_df)))
 
-        total_size_class = user_df['size_class'].sum()
+        total_size_class = user_df["size_class"].sum()
 
         # single point per user
         fig.add_trace(
@@ -90,18 +86,18 @@ def people_timeline(df: pandas.DataFrame) -> go.Figure:
                 ),
                 opacity=0.8,
                 text=[
-                    ''.join(text_atoms),
+                    "".join(text_atoms),
                 ],
                 hovertemplate="%{text}",
                 hoverinfo="text+name",
             )
         )
 
-    setup_default_layout(fig, 'People Timeline')
+    setup_default_layout(fig, "People Timeline")
 
     fig.update_layout(
-        xaxis_title='First contribution',
-        yaxis_title='Last contribution',
+        xaxis_title="First contribution",
+        yaxis_title="Last contribution",
         showlegend=True,
     )
 
@@ -115,17 +111,18 @@ def convert_timestamp_timezone(df: pandas.DataFrame, timezone_name: str | None) 
         df["timestamp"] = df["timestamp"].dt.tz_convert(timezone_name)
     return df
 
+
 class OverviewReport(ReportBase):
     @classmethod
     def get_type(cls) -> ReportType:
         return ReportType.OVERVIEW
 
     def generate(self, config: dict, state: StateModel, datasets: Datasets):
-        out_path = os.path.abspath(read_mandatory(config, 'out-path'))
+        out_path = os.path.abspath(read_mandatory(config, "out-path"))
         ensure_dir_for_path(out_path)
 
         # TODO: include somewhere in the report filter and timezone used
-        filter_expr = read_optional(config, 'filter')
+        filter_expr = read_optional(config, "filter")
 
         activity_df = datasets.activity
         activity_df = convert_timestamp_timezone(activity_df, config.get("timezone"))
@@ -137,9 +134,12 @@ class OverviewReport(ReportBase):
             count_after_filter = len(activity_df)
             LOGGER.info(
                 'filter "%s" left %d of %d data points',
-                filter_expr, count_after_filter, count_before_filter)
+                filter_expr,
+                count_after_filter,
+                count_before_filter,
+            )
 
-        LOGGER.info('total data points: %d', len(activity_df))
+        LOGGER.info("total data points: %d", len(activity_df))
 
         render_widgets_report(
             out_path,

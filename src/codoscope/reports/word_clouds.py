@@ -39,20 +39,23 @@ class WordCloudsReport(ReportBase):
         out_path = os.path.abspath(read_mandatory(config, "out-path"))
         ensure_dir_for_path(out_path)
 
-        width = read_optional(config, 'width', 1900)
-        height = read_optional(config, 'height', 800)
-        max_words = read_optional(config, 'max-words', 250)
-        stop_words = read_optional(config, 'stop-words', None)
-        grouping_period = read_optional(config, 'grouping-period', 'Q')
+        width = read_optional(config, "width", 1900)
+        height = read_optional(config, "height", 800)
+        max_words = read_optional(config, "max-words", 250)
+        stop_words = read_optional(config, "stop-words", None)
+        grouping_period = read_optional(config, "grouping-period", "Q")
 
         LOGGER.info(
             'generating word clouds report (%sx%s) grouping period is "%s"',
-            width, height, grouping_period)
+            width,
+            height,
+            grouping_period,
+        )
 
         df = datasets.activity
-        df['timestamp'] = pandas.to_datetime(df['timestamp'], utc=True)
+        df["timestamp"] = pandas.to_datetime(df["timestamp"], utc=True)
 
-        grouped = df.groupby(df['timestamp'].dt.to_period(grouping_period))
+        grouped = df.groupby(df["timestamp"].dt.to_period(grouping_period))
 
         svgs = []
 
@@ -61,32 +64,33 @@ class WordCloudsReport(ReportBase):
         #  is included into the comments as well...
         # TODO: somehow give more granular priority for JIRA RFE for instance
         text_fields = {
-            'commit_message': 1,
-            'jira_item_key': 1,
-            'jira_summary': 5,
+            "commit_message": 1,
+            "jira_item_key": 1,
+            "jira_summary": 5,
             # 'jira_message': 1,
             # 'jira_description': 1,
-            'bitbucket_pr_title': 1,
-            'bitbucket_pr_description': 3,
+            "bitbucket_pr_title": 1,
+            "bitbucket_pr_description": 3,
             # 'bitbucket_pr_comment': 1,
         }
 
         for period, group_df in grouped:
-            LOGGER.info('processing period %s' % period)
+            LOGGER.info("processing period %s" % period)
             texts = []
             for idx, row in group_df.iterrows():
                 for field, weight in text_fields.items():
                     val = row[field]
                     if val and not pandas.isna(val):
-                        texts.append(('%s ' % row[field]) * weight)
+                        texts.append(("%s " % row[field]) * weight)
 
             wc = wordcloud.WordCloud(
                 width=width,
                 height=height,
                 max_words=max_words,
                 stopwords=stop_words or [],
-                background_color='white')
-            text = ' '.join(texts)
+                background_color="white",
+            )
+            text = " ".join(texts)
             wc.generate(text)
             svg = render_word_cloud_html(wc)
             svgs.append((period, svg))
@@ -94,7 +98,7 @@ class WordCloudsReport(ReportBase):
         # write svgs to html
         body_items = []
         for period, svg in svgs:
-            body_items.append(f'<h1>{period}</h1>\n')
+            body_items.append(f"<h1>{period}</h1>\n")
             body_items.append(svg)
 
         body = f"""
@@ -103,4 +107,4 @@ class WordCloudsReport(ReportBase):
 </div>
 """
 
-        render_html_report(out_path, body, 'word clouds')
+        render_html_report(out_path, body, "word clouds")

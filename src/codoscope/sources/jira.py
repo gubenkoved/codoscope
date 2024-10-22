@@ -27,22 +27,23 @@ class JiraCommentModel(VersionedState):
 
 class JiraItemModel(VersionedState):
     def __init__(
-            self,
-            id: str,
-            key: str,
-            item_type: str,
-            summary: str,
-            description: str | None,
-            status_name: str,
-            status_category_name: str,
-            creator: ActorModel,
-            assignee: ActorModel | None,
-            reporter: ActorModel | None,
-            components: list[str] | None,
-            labels: list[str] | None,
-            comments: list[JiraCommentModel] | None,
-            created_on: datetime.datetime,
-            updated_on: datetime.datetime | None):
+        self,
+        id: str,
+        key: str,
+        item_type: str,
+        summary: str,
+        description: str | None,
+        status_name: str,
+        status_category_name: str,
+        creator: ActorModel,
+        assignee: ActorModel | None,
+        reporter: ActorModel | None,
+        components: list[str] | None,
+        labels: list[str] | None,
+        comments: list[JiraCommentModel] | None,
+        created_on: datetime.datetime,
+        updated_on: datetime.datetime | None,
+    ):
         self.id: str = id
         self.key: str = key
         self.item_type: str = item_type
@@ -88,23 +89,23 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
     count_comments_before = state.total_comments_count
 
     jira = api.Jira(
-        url=config['url'],
-        username=config['username'],
-        password=config['password'],
+        url=config["url"],
+        username=config["username"],
+        password=config["password"],
     )
 
     ingestion_counter = 0
-    ingestion_limit = config.get('ingestion-limit', math.inf)
+    ingestion_limit = config.get("ingestion-limit", math.inf)
 
     myself = jira.myself()
-    my_timezone_name = myself['timeZone']
+    my_timezone_name = myself["timeZone"]
 
-    LOGGER.debug('timezone set in user profile: %s', my_timezone_name)
+    LOGGER.debug("timezone set in user profile: %s", my_timezone_name)
     my_timezone = pytz.timezone(my_timezone_name)
 
     def format_datetime_to_user_tz(datetime: datetime.datetime) -> str:
         local_datetime = datetime.astimezone(my_timezone)
-        return local_datetime.strftime('%Y-%m-%d %H:%M')
+        return local_datetime.strftime("%Y-%m-%d %H:%M")
 
     # NOTE: Jira JQL API will use user's timezone to interpret the datetime here
     # so in order to make it work properly we need to convert the datetime to
@@ -113,80 +114,76 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
         if cutoff_date:
             query = f'Updated >= "{format_datetime_to_user_tz(cutoff_date)}" ORDER BY Updated ASC'
         else:
-            query = 'ORDER BY Updated ASC'
+            query = "ORDER BY Updated ASC"
         return query
 
     def convert_actor(data) -> ActorModel | None:
         if not data:
             return None
-        return ActorModel(
-            data['accountId'],
-            data['displayName'],
-            data.get('emailAddress')
-        )
+        return ActorModel(data["accountId"], data["displayName"], data.get("emailAddress"))
 
     def convert_components(data):
         if not data:
             return None
-        return [component['name'] for component in data]
+        return [component["name"] for component in data]
 
     def convert_comments(data) -> list[JiraCommentModel]:
         if not data:
             return []
         return [
             JiraCommentModel(
-                comment['body'],
-                convert_actor(comment['author']),
-                dateutil.parser.parse(comment['created'])
+                comment["body"],
+                convert_actor(comment["author"]),
+                dateutil.parser.parse(comment["created"]),
             )
             for comment in data
         ]
 
     cutoff_date = state.cutoff_date
 
-    if config.get('cutoff-date'):
+    if config.get("cutoff-date"):
         # YAML has built-in support for date and datetime types
-        cutoff_date = config['cutoff-date']
+        cutoff_date = config["cutoff-date"]
         if isinstance(cutoff_date, datetime.date):
             cutoff_date = datetime.datetime.combine(cutoff_date, datetime.time.min)
         LOGGER.warning('overriding cutoff date with "%s"', cutoff_date)
 
     query = get_query(cutoff_date)
-    limit = max(10, config.get('jql-query-limit', 100))
+    limit = max(10, config.get("jql-query-limit", 100))
     start = 0
 
     while True:
         response = jira.jql(query, start=start, limit=limit)
 
-        if not response['issues']:
+        if not response["issues"]:
             break
 
-        for issue in response['issues']:
+        for issue in response["issues"]:
             ingestion_counter += 1
-            fields = issue['fields']
+            fields = issue["fields"]
             issue_model = JiraItemModel(
-                issue['id'],
-                issue['key'],
-                fields['issuetype']['name'],
-                fields.get('summary'),
-                fields.get('description'),
-                fields['status']['name'],
-                fields['status']['statusCategory']['name'],
-                convert_actor(fields['creator']),
-                convert_actor(fields.get('assignee')),
-                convert_actor(fields.get('reporter')),
-                convert_components(fields.get('components')),
-                fields.get('labels'),
-                convert_comments(fields.get('comment', {}).get('comments')),
-                dateutil.parser.parse(fields['created']),
-                dateutil.parser.parse(fields['updated']),
+                issue["id"],
+                issue["key"],
+                fields["issuetype"]["name"],
+                fields.get("summary"),
+                fields.get("description"),
+                fields["status"]["name"],
+                fields["status"]["statusCategory"]["name"],
+                convert_actor(fields["creator"]),
+                convert_actor(fields.get("assignee")),
+                convert_actor(fields.get("reporter")),
+                convert_components(fields.get("components")),
+                fields.get("labels"),
+                convert_comments(fields.get("comment", {}).get("comments")),
+                dateutil.parser.parse(fields["created"]),
+                dateutil.parser.parse(fields["updated"]),
             )
-            state.items_map[issue['id']] = issue_model
-            cutoff_date = dateutil.parser.parse(issue['fields']['updated'])
+            state.items_map[issue["id"]] = issue_model
+            cutoff_date = dateutil.parser.parse(issue["fields"]["updated"])
 
         # graceful handling for the last page w/o false-positive warnings
-        if response['total'] <= start + len(response['issues']):
-            LOGGER.info('last page of items reached')
+        if response["total"] <= start + len(response["issues"]):
+            LOGGER.info("last page of items reached")
             break
 
         # determine next step
@@ -200,22 +197,24 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
             # prefer cutoff approach (no paging)
             query = get_query(cutoff_date)
             start = 0
-            LOGGER.info('advancing JQL filter by cutoff date to %s', cutoff_date)
-        else: # use paging approach
-            start += len(response['issues'])
+            LOGGER.info("advancing JQL filter by cutoff date to %s", cutoff_date)
+        else:  # use paging approach
+            start += len(response["issues"])
             LOGGER.warning(
-                'using paging because unable to advance JQL filter by cutoff '
-                'date (most likely due to a lot of times changed in a short '
-                'period of time around %s)', cutoff_date)
+                "using paging because unable to advance JQL filter by cutoff "
+                "date (most likely due to a lot of times changed in a short "
+                "period of time around %s)",
+                cutoff_date,
+            )
 
         if ingestion_counter >= ingestion_limit:
-            LOGGER.warning('ingestion limit of %d reached', ingestion_limit)
+            LOGGER.warning("ingestion limit of %d reached", ingestion_limit)
             break
 
     state.cutoff_date = cutoff_date
 
     LOGGER.info(
-        'ingested %d new items, %d new comments',
+        "ingested %d new items, %d new comments",
         state.items_count - count_before,
         state.total_comments_count - count_comments_before,
     )

@@ -1,24 +1,23 @@
-from setuptools import setup, find_namespace_packages
+from setuptools import find_namespace_packages, setup
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     setup(
-        name='codoscope',
-        version='0.0.1',
-        packages=find_namespace_packages(where='src'),
-        package_dir={'': 'src'},
+        name="codoscope",
+        version="0.0.1",
+        packages=find_namespace_packages(where="src"),
+        package_dir={"": "src"},
         install_requires=[
-            'GitPython',
-            'tzlocal',
-            'plotly',
-            'pandas',
-            'coloredlogs',
-            'pyyaml',
-            'atlassian-python-api',
-            'python-dateutil',
-            'wordcloud',
+            "GitPython",
+            "tzlocal",
+            "plotly",
+            "pandas",
+            "coloredlogs",
+            "pyyaml",
+            "atlassian-python-api",
+            "python-dateutil",
+            "wordcloud",
         ],
         entry_points={
-            'console_scripts': ['codoscope=codoscope.cli:entrypoint'],
-        }
+            "console_scripts": ["codoscope=codoscope.cli:entrypoint"],
+        },
     )

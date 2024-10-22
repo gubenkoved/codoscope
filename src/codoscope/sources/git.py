@@ -36,15 +36,15 @@ class CommitStats:
 
 class CommitModel:
     def __init__(
-            self,
-            hexsha: str,
-            author_name: str,
-            author_email: str,
-            committed_datetime: datetime.datetime,
-            authored_datetime: datetime.datetime,
-            message: str,
-            stats: CommitStats,
-            parent_hexsha: list[str],
+        self,
+        hexsha: str,
+        author_name: str,
+        author_email: str,
+        committed_datetime: datetime.datetime,
+        authored_datetime: datetime.datetime,
+        message: str,
+        stats: CommitStats,
+        parent_hexsha: list[str],
     ):
         self.hexsha: str = hexsha
         self.author_name: str = author_name
@@ -79,28 +79,29 @@ class RepoModel(SourceState):
 
 
 def ingest_git_repo(
-        config: dict,
-        repo_state: RepoModel | None,
-        path: str,
-        branches: list[str] = None,
-        ingestion_limit: int | None = None) -> RepoModel:
+    config: dict,
+    repo_state: RepoModel | None,
+    path: str,
+    branches: list[str] = None,
+    ingestion_limit: int | None = None,
+) -> RepoModel:
     repo_state = repo_state or RepoModel()
 
     repo = git.Repo(path)
-    remote_name = config.get('remote', 'origin')
+    remote_name = config.get("remote", "origin")
     remote = repo.remote(remote_name)
 
-    LOGGER.info(f'fetching repo...')
+    LOGGER.info(f"fetching repo...")
     remote.fetch()
 
     commits_counter = 0
 
     if branches is None:
-        branches = ['master', 'main']
+        branches = ["master", "main"]
 
     def is_matching_filters(ref):
         for branch in branches:
-            if fnmatch.fnmatch(ref.path, f'refs/remotes/{remote_name}/{branch}'):
+            if fnmatch.fnmatch(ref.path, f"refs/remotes/{remote_name}/{branch}"):
                 return True
         return False
 
@@ -120,19 +121,22 @@ def ingest_git_repo(
                 continue
 
             if commits_counter >= ingestion_limit:
-                LOGGER.warning('  ingestion limit of %d reached', ingestion_limit)
+                LOGGER.warning("  ingestion limit of %d reached", ingestion_limit)
                 break
 
             commits_counter += 1
 
-            author = '%s (%s)' % (commit.author.name, commit.author.email)
+            author = "%s (%s)" % (commit.author.name, commit.author.email)
             LOGGER.debug(
                 f'  processing commit #%d: %s by "%s" at "%s"',
-                commits_counter, commit.hexsha, author, commit.committed_datetime)
+                commits_counter,
+                commit.hexsha,
+                author,
+                commit.committed_datetime,
+            )
 
             changed_files = {
-                file_name: ChangedFileStatModel(
-                    file_stat['insertions'], file_stat['deletions'])
+                file_name: ChangedFileStatModel(file_stat["insertions"], file_stat["deletions"])
                 for file_name, file_stat in commit.stats.files.items()
             }
 
@@ -151,8 +155,8 @@ def ingest_git_repo(
             repo_state.commits_map[commit.hexsha] = commit_model
 
             if commits_counter % 1000 == 0:
-                LOGGER.info(f'  ingested %d commits', commits_counter)
+                LOGGER.info(f"  ingested %d commits", commits_counter)
 
-    LOGGER.info(f'ingested %d new commits', commits_counter)
+    LOGGER.info(f"ingested %d new commits", commits_counter)
 
     return repo_state
