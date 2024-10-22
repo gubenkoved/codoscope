@@ -115,7 +115,7 @@ def activity_scatter(
         hover_data_columns_map['commit_removed_lines'] = 'removed lines'
         hover_data_columns_map['commit_message'] = 'commit message'
         hover_data_columns_map['jira_summary'] = 'summary'
-        # hover_data_columns_map['jira_message'] = 'message'
+        hover_data_columns_map['jira_message'] = 'message'
 
     for (author, activity_type), df in grouped_df:
         name = '%s %s' % (author, activity_type)
