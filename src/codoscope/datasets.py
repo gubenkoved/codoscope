@@ -61,6 +61,8 @@ def extract_activity(state: StateModel) -> pandas.DataFrame:
                             'bitbucket_pr_description': pr.description,
                             'bitbucket_pr_id': pr.id,
                             'bitbucket_pr_url': pr.url,
+                            'bitbucket_project_name': project_name,
+                            'bitbucket_repo_name': repo_name,
                         })
                         for participant in pr.participants or []:
                             if not participant.has_approved:
@@ -76,6 +78,8 @@ def extract_activity(state: StateModel) -> pandas.DataFrame:
                                 'bitbucket_pr_title': pr.title,
                                 'bitbucket_pr_id': pr.id,
                                 'bitbucket_pr_url': pr.url,
+                                'bitbucket_project_name': project_name,
+                                'bitbucket_repo_name': repo_name,
                             })
                         for comment in pr.commentaries:
                             is_answering_your_own_pr = (
@@ -96,6 +100,8 @@ def extract_activity(state: StateModel) -> pandas.DataFrame:
                                 'bitbucket_pr_id': pr.id,
                                 'bitbucket_pr_url': pr.url,
                                 'bitbucket_pr_comment': comment.message,
+                                'bitbucket_project_name': project_name,
+                                'bitbucket_repo_name': repo_name,
                             })
         elif isinstance(source, JiraState):
             for item in source.items_map.values():
@@ -129,5 +135,10 @@ def extract_activity(state: StateModel) -> pandas.DataFrame:
             LOGGER.warning('skipping source "%s" of type "%s"', source_name, source.source_type)
 
     df = pandas.DataFrame(data)
+
+    # note: Int64 can hold NaN values (as opposed to int)
+    df['commit_added_lines'] = df['commit_added_lines'].astype('Int64')
+    df['commit_removed_lines'] = df['commit_removed_lines'].astype('Int64')
+    df['commit_changed_lines'] = df['commit_changed_lines'].astype('Int64')
 
     return df

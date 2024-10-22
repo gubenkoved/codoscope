@@ -22,15 +22,15 @@ class CommitStats:
         self.changed_files: dict[str, ChangedFileStatModel] = changed_files
 
     @property
-    def total_insertions(self):
+    def total_insertions(self) -> int:
         return sum([file_stat.insertions for file_stat in self.changed_files.values()])
 
     @property
-    def total_deletions(self):
+    def total_deletions(self) -> int:
         return sum([file_stat.deletions for file_stat in self.changed_files.values()])
 
     @property
-    def total_changed_lines(self):
+    def total_changed_lines(self) -> int:
         return self.total_insertions + self.total_deletions
 
 

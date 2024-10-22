@@ -2,8 +2,9 @@ import logging
 import math
 import os
 import os.path
-
 import textwrap
+from typing import Any
+
 import pandas
 import pandas as pd
 import plotly.graph_objects as go
@@ -55,6 +56,31 @@ HOVER_TEXT_MAX_ITEM_LEN = 1000
 HOVER_TEXT_WRAP_WIDTH = 140
 
 
+class HoverDataColumnDescriptor:
+    def __init__(self, label: str | None, converter: callable):
+        self.label = label
+        self.converter = converter
+
+
+def get_hover_text(row: tuple[Any, ...], hover_data_columns_map: dict[str, HoverDataColumnDescriptor]) -> str:
+    text_item = f'<b>{row.source_name}</b><br>'
+    for col_name, col_descriptor in hover_data_columns_map.items():
+        col_val = getattr(row, col_name, None)
+        if col_val is not None and not pd.isna(col_val):
+            col_val = col_descriptor.converter(col_val) if col_descriptor.converter else col_val
+            if col_descriptor.label:
+                text_item += '<b>%s</b>: %s<br>' % (col_descriptor.label, col_val)
+            else:  # no column label
+                text_item += '%s<br>' % col_val
+            text_item = limit_text_len(text_item, HOVER_TEXT_MAX_ITEM_LEN)
+            # split into lines to avoid too long hover text
+            text_item_lines = textwrap.wrap(
+                text_item, break_long_words=False, break_on_hyphens=False,
+                width=HOVER_TEXT_WRAP_WIDTH)
+            text_item = '<br>'.join(text_item_lines)
+    return text_item
+
+
 def activity_scatter(
         activity_df: pandas.DataFrame, extended_mode: bool = False) -> go.Figure | None:
     fig = go.Figure()
@@ -103,21 +129,29 @@ def activity_scatter(
 
     LOGGER.debug('groups count: %s', grouped_df.ngroups)
 
+    def ident(x):
+        return x
+
+    def convert_int(x):
+        return '%d' % x
+
     # column name to label map
     hover_data_columns_map = {
-        'commit_sha': None,
-        'bitbucket_pr_title': None,
-        'jira_item_key': None,
+        'commit_sha': HoverDataColumnDescriptor(None, ident),
+        'bitbucket_pr_title': HoverDataColumnDescriptor(None, ident),
+        'jira_item_key': HoverDataColumnDescriptor(None, ident),
     }
 
     if extended_mode:
-        hover_data_columns_map['commit_added_lines'] = 'added lines'
-        hover_data_columns_map['commit_removed_lines'] = 'removed lines'
-        hover_data_columns_map['commit_message'] = 'commit message'
-        hover_data_columns_map['jira_summary'] = 'summary'
-        hover_data_columns_map['jira_message'] = 'message'
-        hover_data_columns_map['bitbucket_pr_comment'] = 'comment'
-        hover_data_columns_map['bitbucket_pr_id'] = 'PR ID'
+        hover_data_columns_map.update({
+            'commit_added_lines': HoverDataColumnDescriptor('added lines', convert_int),
+            'commit_removed_lines': HoverDataColumnDescriptor('removed lines', convert_int),
+            'commit_message': HoverDataColumnDescriptor('commit message', ident),
+            'jira_summary': HoverDataColumnDescriptor('summary', ident),
+            'jira_message': HoverDataColumnDescriptor('message', ident),
+            'bitbucket_pr_comment': HoverDataColumnDescriptor('comment', ident),
+            'bitbucket_pr_id': HoverDataColumnDescriptor('PR ID', ident),
+        })
 
     for (author, activity_type), df in grouped_df:
         name = '%s %s' % (author, activity_type)
@@ -125,21 +159,7 @@ def activity_scatter(
         # compose hover texts all the fields
         texts = []
         for row in df.itertuples():
-            text_item = f'<b>{row.source_name}</b><br>'
-            for col_name, col_label in hover_data_columns_map.items():
-                col_val = getattr(row, col_name, None)
-                if col_val and not pd.isna(col_val):
-                    if col_label:
-                        text_item += '<b>%s</b>: %s<br>' % (col_label, col_val)
-                    else:  # no column label
-                        text_item += '%s<br>' % col_val
-                    text_item = limit_text_len(text_item, HOVER_TEXT_MAX_ITEM_LEN)
-                    # split into lines to avoid too long hover text
-                    text_item_lines = textwrap.wrap(
-                        text_item, break_long_words=False, break_on_hyphens=False,
-                        width=HOVER_TEXT_WRAP_WIDTH)
-                    text_item = '<br>'.join(text_item_lines)
-            texts.append(text_item)
+            texts.append(get_hover_text(row, hover_data_columns_map))
 
         trace = go.Scattergl(
             name=name,
