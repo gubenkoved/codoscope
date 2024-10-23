@@ -33,8 +33,8 @@ def extract_activity(state: StateModel) -> pandas.DataFrame:
                         "source_subtype": None,
                         "activity_type": "commit",
                         "timestamp": commit.committed_datetime,
-                        "author": commit.author_name,
-                        "author_email": commit.author_email,
+                        "user": commit.author_name,
+                        "user_email": commit.author_email,
                         "commit_sha": commit.hexsha,
                         "commit_message": commit.message,
                         "commit_message_first_line": commit.message.split("\n")[0],
@@ -64,7 +64,7 @@ def extract_activity(state: StateModel) -> pandas.DataFrame:
                                 "activity_type": "pr",
                                 "timestamp": pr.created_on,
                                 "size_class": 15,
-                                "author": pr.author.display_name if pr.author else None,
+                                "user": pr.author.display_name if pr.author else None,
                                 "bitbucket_pr_title": pr.title,
                                 "bitbucket_pr_description": pr.description,
                                 "bitbucket_pr_id": pr.id,
@@ -84,7 +84,7 @@ def extract_activity(state: StateModel) -> pandas.DataFrame:
                                     "activity_type": "approved pr",
                                     "timestamp": participant.participated_on,
                                     "size_class": 8,
-                                    "author": (
+                                    "user": (
                                         participant.user.display_name if participant.user else None
                                     ),
                                     "bitbucket_pr_title": pr.title,
@@ -108,7 +108,7 @@ def extract_activity(state: StateModel) -> pandas.DataFrame:
                                     "activity_type": "pr comment",
                                     "timestamp": comment.created_on,
                                     "size_class": 4 if is_answering_your_own_pr else 6,
-                                    "author": (
+                                    "user": (
                                         comment.author.display_name if comment.author else None
                                     ),
                                     "bitbucket_is_answering_your_own_pr": is_answering_your_own_pr,
@@ -130,8 +130,8 @@ def extract_activity(state: StateModel) -> pandas.DataFrame:
                         "activity_type": "created %s" % item.item_type,
                         "timestamp": item.created_on,
                         "size_class": 8,
-                        "author": item.creator.display_name,
-                        "author_email": item.creator.email,
+                        "user": item.creator.display_name,
+                        "user_email": item.creator.email,
                         "jira_item_key": item.key,
                         "jira_description": item.description,
                         "jira_summary": item.summary,
@@ -146,8 +146,8 @@ def extract_activity(state: StateModel) -> pandas.DataFrame:
                             "activity_type": "jira comment",
                             "timestamp": comment.created_on,
                             "size_class": 4,
-                            "author": comment.created_by.display_name,
-                            "author_email": comment.created_by.email,
+                            "user": comment.created_by.display_name,
+                            "user_email": comment.created_by.email,
                             "jira_item_key": item.key,
                             "jira_message": comment.message,
                         }

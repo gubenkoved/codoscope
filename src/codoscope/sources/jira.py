@@ -110,7 +110,7 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
     # NOTE: Jira JQL API will use user's timezone to interpret the datetime here
     # so in order to make it work properly we need to convert the datetime to
     # that timezone
-    def get_query(cutoff_date: datetime) -> str:
+    def get_query(cutoff_date: datetime.datetime) -> str:
         if cutoff_date:
             query = f'Updated >= "{format_datetime_to_user_tz(cutoff_date)}" ORDER BY Updated ASC'
         else:
@@ -120,7 +120,11 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
     def convert_actor(data) -> ActorModel | None:
         if not data:
             return None
-        return ActorModel(data["accountId"], data["displayName"], data.get("emailAddress"))
+        return ActorModel(
+            account_id=data["accountId"],
+            display_name=data["displayName"],
+            email=data.get("emailAddress"),
+        )
 
     def convert_components(data):
         if not data:
@@ -132,9 +136,9 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
             return []
         return [
             JiraCommentModel(
-                comment["body"],
-                convert_actor(comment["author"]),
-                dateutil.parser.parse(comment["created"]),
+                message=comment["body"],
+                created_by=convert_actor(comment["author"]),
+                created_on=dateutil.parser.parse(comment["created"]),
             )
             for comment in data
         ]

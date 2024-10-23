@@ -5,7 +5,7 @@ import pandas
 import plotly.graph_objects as go
 import wordcloud
 
-from codoscope.common import ensure_dir, sanitize_filename
+from codoscope.common import ensure_dir, sanitize_filename, NA_REPLACEMENT
 from codoscope.config import read_mandatory
 from codoscope.datasets import Datasets
 from codoscope.reports.common import (
@@ -96,10 +96,10 @@ class PerUserStatsReport(ReportBase):
 """
 
     def emails_timeline(self, df: pandas.DataFrame) -> go.Figure:
-        df["author_email"] = df["author_email"].fillna("unspecified")
+        df["user_email"] = df["user_email"].fillna(NA_REPLACEMENT)
 
         email_stats = (
-            df.groupby("author_email").agg({"timestamp": ["count", "min", "max"]}).reset_index()
+            df.groupby("user_email").agg({"timestamp": ["count", "min", "max"]}).reset_index()
         )
         email_stats.columns = ["email", "count", "first-used", "last-used"]
         email_stats = email_stats.sort_values("count", ascending=False)
@@ -115,8 +115,8 @@ class PerUserStatsReport(ReportBase):
                     mode="lines+markers",
                     name=f"{email} ({row['count']} activities)",
                     text=[
-                        f"First: {row['first-used'].strftime('%Y-%m-%d %H:%M:%S')}",
-                        f"Last: {row['last-used'].strftime('%Y-%m-%d %H:%M:%S')}",
+                        f"first: {row['first-used'].strftime('%Y-%m-%d %H:%M:%S')}",
+                        f"last: {row['last-used'].strftime('%Y-%m-%d %H:%M:%S')}",
                     ],
                     hoverinfo="text+name",
                     line=dict(width=3),
@@ -158,7 +158,7 @@ class PerUserStatsReport(ReportBase):
         activity_df = datasets.activity
         activity_df = convert_timestamp_timezone(activity_df, config.get("timezone", "utc"))
 
-        grouped_by_user = activity_df.groupby(["author"])
+        grouped_by_user = activity_df.groupby(["user"])
 
         processed_count = 0
         for (user_name,), user_df in grouped_by_user:

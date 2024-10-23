@@ -41,7 +41,7 @@ reports:
     type: overview
     enabled: true
     out-path: overview-filtered.html
-    filter: "'John' in author"
+    filter: "'John' in user"
 
   - name: overview-tz-normalized
     type: overview

@@ -52,11 +52,11 @@ class PerSourceStatsReport(ReportBase):
 
     def weekly_stats_by_user(self, df: pandas.DataFrame) -> go.Figure:
         df = df.set_index("timestamp")
-        df["author"] = df["author"].fillna(NA_REPLACEMENT)
+        df["user"] = df["user"].fillna(NA_REPLACEMENT)
         df["activity_type"] = df["activity_type"].fillna(NA_REPLACEMENT)
 
-        sorted_df = df.sort_values(by=["author", "activity_type"], ascending=True)
-        grouped_by_user_activity = sorted_df.groupby(["author", "activity_type"])
+        sorted_df = df.sort_values(by=["user", "activity_type"], ascending=True)
+        grouped_by_user_activity = sorted_df.groupby(["user", "activity_type"])
 
         fig = go.Figure()
         for (author, activity_type), group_df in grouped_by_user_activity:

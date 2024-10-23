@@ -21,8 +21,10 @@ class UniqueUsersReport(ReportBase):
         ensure_dir_for_path(out_path)
 
         df = datasets.activity
-        df["author_email"] = df["author_email"].fillna("")
 
-        groupped_df = df.groupby(["author", "author_email"]).size().reset_index(name="count")
+        # fill user email with replacement string otherwise they won't be included into groupping
+        df["user_email"] = df["user_email"].fillna("")
+
+        groupped_df = df.groupby(["user", "user_email"]).size().reset_index(name="count")
 
         groupped_df.to_csv(out_path)

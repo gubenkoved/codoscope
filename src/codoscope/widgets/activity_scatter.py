@@ -87,12 +87,10 @@ def activity_scatter(
     )
 
     # initialize for missing authors
-    activity_df["author"] = activity_df["author"].fillna(NA_REPLACEMENT)
+    activity_df["user"] = activity_df["user"].fillna(NA_REPLACEMENT)
 
     # sort for predictable labels order for traces
-    activity_df = activity_df.sort_values(
-        by=["author", "source_type", "source_subtype", "timestamp"]
-    )
+    activity_df = activity_df.sort_values(by=["user", "source_type", "source_subtype", "timestamp"])
 
     LOGGER.debug("data points to render: %d", len(activity_df))
 
@@ -102,7 +100,7 @@ def activity_scatter(
 
     activity_df["source_subtype"] = activity_df["source_subtype"].fillna("")
 
-    grouped_df = activity_df.groupby(["author", "activity_type"])
+    grouped_df = activity_df.groupby(["user", "activity_type"])
 
     LOGGER.debug("groups count: %s", grouped_df.ngroups)
 

@@ -28,7 +28,7 @@ def apply_filter(df: pandas.DataFrame, expr: str) -> pandas.DataFrame:
 
 
 def people_timeline(df: pandas.DataFrame) -> go.Figure:
-    df["author"] = df["author"].fillna(NA_REPLACEMENT)
+    df["user"] = df["user"].fillna(NA_REPLACEMENT)
 
     timestamp_range = [
         df["timestamp"].min(),
@@ -54,7 +54,7 @@ def people_timeline(df: pandas.DataFrame) -> go.Figure:
         )
     )
 
-    grouped_by_user = df.sort_values("timestamp", ascending=True).groupby(["author"])
+    grouped_by_user = df.sort_values("timestamp", ascending=True).groupby(["user"])
 
     for (user,), user_df in grouped_by_user:
         first_timestamp = user_df["timestamp"].min()

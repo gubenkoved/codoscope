@@ -34,16 +34,16 @@ class RemapUsersProcessor(ProcessorBase):
         remapped_items_count = 0
         df = datasets.activity
         for index, row in df.iterrows():
-            author = row["author"]
-            author_email = row["author_email"]
+            user = row["user"]
+            user_email = row["user_email"]
 
-            if author_email and author_email in self.email_to_canonical_name_map:
-                df.at[index, "author"] = self.email_to_canonical_name_map[author_email]
+            if user_email and user_email in self.email_to_canonical_name_map:
+                df.at[index, "user"] = self.email_to_canonical_name_map[user_email]
                 remapped_items_count += 1
                 continue
 
-            if author and author in self.name_to_canonical_name_map:
-                df.at[index, "author"] = self.name_to_canonical_name_map[author]
+            if user and user in self.name_to_canonical_name_map:
+                df.at[index, "user"] = self.name_to_canonical_name_map[user]
                 remapped_items_count += 1
                 continue
 
