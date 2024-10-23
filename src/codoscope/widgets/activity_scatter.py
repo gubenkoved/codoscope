@@ -129,6 +129,7 @@ def activity_scatter(
                 "jira_message": HoverDataColumnDescriptor("message", ident),
                 "bitbucket_pr_comment": HoverDataColumnDescriptor("comment", ident),
                 "bitbucket_pr_id": HoverDataColumnDescriptor("PR ID", ident),
+                "bitbucket_repo_name": HoverDataColumnDescriptor("repository", ident),
             }
         )
 
