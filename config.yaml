@@ -86,3 +86,7 @@ reports:
   - name: internal-state
     type: internal-state
     out-path: internal-state.html
+
+  - name: datasets-export
+    type: datasets-export
+    out-dir: datasets
