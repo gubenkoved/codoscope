@@ -4,3 +4,7 @@ class ErrorBase(Exception):
 
 class ConfigError(ErrorBase):
     pass
+
+
+class InvalidOperationError(ErrorBase):
+    pass
