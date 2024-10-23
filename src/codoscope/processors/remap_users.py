@@ -2,11 +2,12 @@ import logging
 
 from codoscope.datasets import Datasets
 from codoscope.exceptions import ConfigError
+from codoscope.processors.common import ProcessorBase, ProcessorType
 
 LOGGER = logging.getLogger(__name__)
 
 
-class RemapUsersProcessor:
+class RemapUsersProcessor(ProcessorBase):
     def __init__(self, processor_config: dict):
         self.config = processor_config
 
@@ -25,6 +26,9 @@ class RemapUsersProcessor:
                         if alias in self.email_to_canonical_name_map:
                             raise ConfigError('Email already mapped: "%s"' % alias)
                         self.email_to_canonical_name_map[alias] = canonical_name
+
+    def get_type(self) -> ProcessorType:
+        return ProcessorType.REMAP_USERS
 
     def execute(self, datasets: Datasets):
         remapped_items_count = 0
