@@ -158,6 +158,7 @@ def extract_activity(state: StateModel) -> pandas.DataFrame:
     df = pandas.DataFrame(data)
 
     # note: Int64 can hold NaN values (as opposed to int)
+    df["bitbucket_pr_id"] = df["bitbucket_pr_id"].astype("Int64")
     df["commit_added_lines"] = df["commit_added_lines"].astype("Int64")
     df["commit_removed_lines"] = df["commit_removed_lines"].astype("Int64")
     df["commit_changed_lines"] = df["commit_changed_lines"].astype("Int64")

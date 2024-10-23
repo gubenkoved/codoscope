@@ -44,7 +44,7 @@ class PullRequestParticipantModel(VersionedState):
 class PullRequestModel(VersionedState):
     def __init__(
         self,
-        id: str,
+        id: int,
         url: str,
         author: ActorModel | None,
         title: str | None,
@@ -57,7 +57,7 @@ class PullRequestModel(VersionedState):
         created_on: datetime.datetime,
         updated_on: datetime.datetime,
     ):
-        self.id: str = id
+        self.id: int = id
         self.url: str = url
         self.author: ActorModel | None = author
         self.title: str | None = title
