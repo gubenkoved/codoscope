@@ -12,12 +12,20 @@ LOGGER = logging.getLogger(__name__)
 
 
 class Datasets:
-    def __init__(self, activity: pandas.DataFrame) -> None:
+    def __init__(
+        self,
+        activity: pandas.DataFrame,
+        reviews: pandas.DataFrame,
+    ) -> None:
         self.activity: pandas.DataFrame = activity
+        self.reviews: pandas.DataFrame = reviews
 
     @classmethod
     def extract(cls, state: StateModel) -> "Datasets":
-        return Datasets(extract_activity(state))
+        return Datasets(
+            extract_activity(state),
+            extract_reviews(state),
+        )
 
 
 def extract_activity(state: StateModel) -> pandas.DataFrame:
@@ -64,7 +72,7 @@ def extract_activity(state: StateModel) -> pandas.DataFrame:
                                 "activity_type": "pr",
                                 "timestamp": pr.created_on,
                                 "size_class": 15,
-                                "user": pr.author.display_name if pr.author else None,
+                                "user": (pr.author.display_name if pr.author else None),
                                 "bitbucket_pr_title": pr.title,
                                 "bitbucket_pr_description": pr.description,
                                 "bitbucket_pr_id": pr.id,
@@ -107,7 +115,7 @@ def extract_activity(state: StateModel) -> pandas.DataFrame:
                                     "source_subtype": "comment",
                                     "activity_type": "pr comment",
                                     "timestamp": comment.created_on,
-                                    "size_class": 4 if is_answering_your_own_pr else 6,
+                                    "size_class": (4 if is_answering_your_own_pr else 6),
                                     "user": (
                                         comment.author.display_name if comment.author else None
                                     ),
@@ -153,7 +161,11 @@ def extract_activity(state: StateModel) -> pandas.DataFrame:
                         }
                     )
         else:
-            LOGGER.warning('skipping source "%s" of type "%s"', source_name, source.source_type)
+            LOGGER.warning(
+                'skipping source "%s" of type "%s"',
+                source_name,
+                source.source_type,
+            )
 
     df = pandas.DataFrame(data)
 
@@ -163,4 +175,39 @@ def extract_activity(state: StateModel) -> pandas.DataFrame:
     df["commit_removed_lines"] = df["commit_removed_lines"].astype("Int64")
     df["commit_changed_lines"] = df["commit_changed_lines"].astype("Int64")
 
+    return df
+
+
+def extract_reviews(state: StateModel) -> pandas.DataFrame:
+    data = []
+
+    for source_name, source in state.sources.items():
+        if isinstance(source, BitbucketState):
+            for project_name, project in source.projects_map.items():
+                for repo_name, repo in project.repositories_map.items():
+                    for pr_name, pr in repo.pull_requests_map.items():
+                        if not pr.author:
+                            continue
+                        for pr_participant in pr.participants or []:
+                            if not pr_participant.user:
+                                continue
+                            data.append(
+                                {
+                                    "source_name": source_name,
+                                    "source_type": source.source_type.value,
+                                    "reviewer_user": pr_participant.user.display_name,
+                                    "reviewee_user": pr.author.display_name,
+                                    "is_self_review": pr.author.account_id
+                                    == pr_participant.user.account_id,
+                                    "has_approved": pr_participant.has_approved,
+                                    "timestamp": pr_participant.participated_on,
+                                    "bitbucket_pr_title": pr.title,
+                                    "bitbucket_pr_id": pr.id,
+                                    "bitbucket_pr_url": pr.url,
+                                    "bitbucket_project_name": project_name,
+                                    "bitbucket_repo_name": repo_name,
+                                }
+                            )
+
+    df = pandas.DataFrame(data)
     return df

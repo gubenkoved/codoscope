@@ -22,6 +22,7 @@ class DatasetsExportReport(ReportBase):
 
         datasets_map = {
             "activity": datasets.activity,
+            "reviews": datasets.reviews,
         }
 
         for name, df in datasets_map.items():

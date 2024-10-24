@@ -185,7 +185,11 @@ def ingest_bitbucket(config: dict, state: BitbucketState | None) -> BitbucketSta
                 break
 
             repo_name = config_repo["name"]
-            LOGGER.info('ingesting repository "%s" (project "%s")', repo_name, project_name)
+            LOGGER.info(
+                'ingesting repository "%s" (project "%s")',
+                repo_name,
+                project_name,
+            )
 
             repo = project.repositories.get(repo_name)
             repo_state = project_state.repositories_map.setdefault(repo_name, RepositoryModel())
@@ -218,7 +222,7 @@ def ingest_bitbucket(config: dict, state: BitbucketState | None) -> BitbucketSta
                     '  processing "%s" which is created on %s by %s',
                     pr.url,
                     pr.created_on,
-                    author.display_name if author and author.display_name else "???",
+                    (author.display_name if author and author.display_name else "???"),
                 )
 
                 repo_state.cutoff_date = pr.updated_on

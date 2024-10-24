@@ -5,7 +5,7 @@ import pandas
 import plotly.graph_objects as go
 import wordcloud
 
-from codoscope.common import ensure_dir, sanitize_filename, NA_REPLACEMENT
+from codoscope.common import NA_REPLACEMENT, ensure_dir, sanitize_filename
 from codoscope.config import read_mandatory
 from codoscope.datasets import Datasets
 from codoscope.reports.common import (
