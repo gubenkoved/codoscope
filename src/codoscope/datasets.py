@@ -76,7 +76,6 @@ def extract_activity(state: StateModel) -> pandas.DataFrame:
                                 "bitbucket_pr_title": pr.title,
                                 "bitbucket_pr_description": pr.description,
                                 "bitbucket_pr_id": pr.id,
-                                "bitbucket_pr_url": pr.url,
                                 "bitbucket_project_name": project_name,
                                 "bitbucket_repo_name": repo_name,
                             }
@@ -97,7 +96,6 @@ def extract_activity(state: StateModel) -> pandas.DataFrame:
                                     ),
                                     "bitbucket_pr_title": pr.title,
                                     "bitbucket_pr_id": pr.id,
-                                    "bitbucket_pr_url": pr.url,
                                     "bitbucket_project_name": project_name,
                                     "bitbucket_repo_name": repo_name,
                                 }
@@ -122,7 +120,6 @@ def extract_activity(state: StateModel) -> pandas.DataFrame:
                                     "bitbucket_is_answering_your_own_pr": is_answering_your_own_pr,
                                     "bitbucket_pr_title": pr.title,
                                     "bitbucket_pr_id": pr.id,
-                                    "bitbucket_pr_url": pr.url,
                                     "bitbucket_pr_comment": comment.message,
                                     "bitbucket_project_name": project_name,
                                     "bitbucket_repo_name": repo_name,
@@ -203,7 +200,6 @@ def extract_reviews(state: StateModel) -> pandas.DataFrame:
                                     "timestamp": pr_participant.participated_on,
                                     "bitbucket_pr_title": pr.title,
                                     "bitbucket_pr_id": pr.id,
-                                    "bitbucket_pr_url": pr.url,
                                     "bitbucket_project_name": project_name,
                                     "bitbucket_repo_name": repo_name,
                                 }
