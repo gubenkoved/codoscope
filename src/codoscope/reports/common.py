@@ -18,6 +18,7 @@ class ReportType(enum.StrEnum):
     UNIQUE_USERS = "unique-users"
     DATASETS_EXPORT = "datasets-export"
     WORD_CLOUDS = "word-clouds"
+    PR_REVIEWS = "pr-reviews"
     INDEX = "index"
 
 

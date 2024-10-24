@@ -56,6 +56,10 @@ reports:
     type: per-source-stats
     dir-path: per-source-stats
 
+  - name: pr-reviews
+    type: pr-reviews
+    out-path: pr-reviews.html
+
   - name: word-clouds
     type: word-clouds
     grouping-period: Q

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{title}}</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      /* prevent scrollbars */
+    }
+
+    .link {
+      stroke: gray;
+      fill: none;
+    }
+
+    .node {
+      cursor: pointer;
+      stroke: #555;
+      stroke-width: 1;
+      opacity: 1;
+    }
+
+    .node:hover {
+      stroke: black;
+      stroke-width: 3;
+    }
+
+    text {
+      font-family: 'Ubuntu Mono', sans-serif;
+      font-size: 16px;
+      font-weight: bold;
+      pointer-events: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div>
+    <svg></svg>
+  </div>
+
+  <script>
+    const svg = d3.select("svg")
+      .attr("width", window.innerWidth)
+      .attr("height", window.innerHeight);
+
+    const width = +svg.attr("width");
+    const height = +svg.attr("height");
+
+    svg.append("defs")
+      .append("marker")
+      .attr("id", "arrowhead")
+      .attr("viewBox", "0 -5 10 10")
+      .attr("refX", 10)
+      .attr("refY", 0)
+      .attr("orient", "auto")
+      .attr("markerWidth", 10)
+      .attr("markerHeight", 10)
+      .attr("xoverflow", "visible")
+      .append("svg:path")
+      .attr("d", "M 0,-5 L 10,0 L 0,5")
+      .style("fill", "none")
+      .style("stroke", "gray")
+      .style("stroke-width", 1);
+
+    svg.call(d3.zoom() // Add zoom behavior to the SVG
+      .scaleExtent([0.1, 10]) // Define the zoom scale range
+      .on("zoom", zoomed));
+
+    const nodes = [
+      {% for name, info in user_info_map.items() -%}
+          { id: "{{name}}", size: {{info.size}}, color: "{{info.color}}" },
+      {% endfor %}
+    ];
+
+    const links = [
+      {% for link in review_links -%}
+          { source: "{{link.reviewer}}", target: "{{link.reviewee}}", strength: {{link.strength}}, count: {{link.count}}, width: {{link.width}}, opacity: {{link.opacity}} },
+      {% endfor %}
+    ];
+
+    const simulation = d3.forceSimulation(nodes)
+      .force(
+        "link",
+        d3.forceLink(links)
+        .id(d => d.id)
+        .strength(d => d.strength)
+      )
+      .force(
+        "charge",
+        d3.forceManyBody()
+        .strength(-200)
+      )
+      .force(
+        "center",
+        d3.forceCenter(width / 2, height / 2)
+      );
+
+    const container = svg.append("g");
+
+    // edges
+    const link = container.append("g")
+      .attr("class", "links")
+      .selectAll("path")
+      .data(links)
+      .enter()
+      .append("path")
+      .attr("class", "link")
+      .attr("marker-end", "url(#arrowhead)")
+      .attr("d", d => computePath(d))
+      .attr("stroke-width", d => d.width)
+      .attr("opacity", d => d.opacity);
+
+    // nodes
+    const node = container.append("g")
+      .attr("class", "nodes")
+      .selectAll("circle")
+      .data(nodes)
+      .enter()
+      .append("circle")
+      .attr("class", "node")
+      .attr("r", d => d.size)
+      .attr("fill", d => d.color)
+      .call(d3.drag()
+        .on("start", dragStarted)
+        .on("drag", dragged)
+        .on("end", dragEnded));
+
+    // node labels
+    container.append("g")
+      .selectAll("text")
+      .data(nodes)
+      .enter()
+      .append("text")
+      .attr("dx", d => d.size + 4)
+      .attr("dy", d => 6)
+      .text(d => d.id);
+
+    simulation.on("tick", () => {
+      link
+        .attr("d", d => computePath(d));
+
+      node.attr("cx", d => d.x)
+        .attr("cy", d => d.y);
+
+      svg.selectAll("text")
+        .attr("x", d => d.x)
+        .attr("y", d => d.y);
+    });
+
+    function computePath(d) {
+      var t_radius = d.target.size;
+      var dx = d.target.x - d.source.x;
+      var dy = d.target.y - d.source.y;
+      var gamma = Math.atan2(dy, dx);
+      var tx = d.target.x - (Math.cos(gamma) * t_radius);
+      var ty = d.target.y - (Math.sin(gamma) * t_radius);
+      return "M" + d.source.x + "," + d.source.y + "L" + tx + "," + ty;
+    }
+
+    // drag handlers
+    function dragStarted(event, d) {
+      if (!event.active)
+        simulation.alphaTarget(0.3).restart();
+      d.fx = d.x;
+      d.fy = d.y;
+    }
+
+    function dragged(event, d) {
+      d.fx = event.x;
+      d.fy = event.y;
+    }
+
+    function dragEnded(event, d) {
+      if (!event.active)
+        simulation.alphaTarget(0);
+      d.fx = null;
+      d.fy = null;
+    }
+
+    // zoom handler
+    function zoomed(event) {
+      container.attr("transform", event.transform); // Apply zoom transformation to the group
+    }
+
+    // resize the SVG when the window size changes
+    window.addEventListener("resize", () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      svg.attr("width", w)
+        .attr("height", h);
+      simulation.force("center", d3.forceCenter(w / 2, h / 2)).alpha(0.3).restart();
+    });
+  </script>
+</body>
+</html>
