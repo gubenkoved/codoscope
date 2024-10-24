@@ -56,12 +56,12 @@ def discover_aliases(config: dict):
         LOGGER.info("capturing associations between names and emails...")
         for item in activity_df.itertuples():
             name_node, email_node = None, None
-            if not pandas.isna(item.author):
-                name_node = ensure_node("name", item.author)
+            if not pandas.isna(item.user):
+                name_node = ensure_node("name", item.user)
                 if maintain_use_counter:
                     name_node.inc_use_counter()
-            if not pandas.isna(item.author_email):
-                email_node = ensure_node("email", item.author_email)
+            if not pandas.isna(item.user_email):
+                email_node = ensure_node("email", item.user_email)
                 if maintain_use_counter:
                     email_node.inc_use_counter()
 
