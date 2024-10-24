@@ -54,6 +54,9 @@ def get_hover_text(
     return text_item
 
 
+# TODO: consider switching approach to use customdata; this should decrease
+#  the size of the plot by removing duplication;
+#  see https://plotly.com/python/hover-text-and-formatting/
 def activity_scatter(
     activity_df: pandas.DataFrame, extended_mode: bool = False, title: str | None = None
 ) -> go.Figure | None:
