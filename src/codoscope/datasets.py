@@ -45,7 +45,6 @@ def extract_activity(state: StateModel) -> pandas.DataFrame:
                         "user_email": commit.author_email,
                         "commit_sha": commit.hexsha,
                         "commit_message": commit.message,
-                        "commit_message_first_line": commit.message.split("\n")[0],
                         "commit_added_lines": commit.stats.total_insertions,
                         "commit_removed_lines": commit.stats.total_deletions,
                         "commit_changed_lines": commit.stats.total_changed_lines,
