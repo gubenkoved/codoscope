@@ -158,12 +158,12 @@ class PerUserStatsReport(ReportBase):
         commits_df: pandas.DataFrame = df[df["activity_type"] == "commit"].copy()
 
         no_commits_replacement_widget = Widget.centered(
-            '''
+            """
             <div style="padding: 20px; color: gray; text-align: center; font-size: small;">
                 <b>No data</b><br>
                 <i>no commits to build commit based plot<i>
             </div>
-            '''
+            """
         )
 
         render_widgets_report(
@@ -187,11 +187,13 @@ class PerUserStatsReport(ReportBase):
                             activity_by_weekday_2d(
                                 commits_df,
                                 title="Commit heatmap (local time)",
-                            ) or no_commits_replacement_widget,
+                            )
+                            or no_commits_replacement_widget,
                             activity_offset_hisogram(
                                 commits_df,
                                 title="Commit time offsets",
-                            ) or no_commits_replacement_widget,
+                            )
+                            or no_commits_replacement_widget,
                         ]
                     ]
                 ),

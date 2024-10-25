@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pandas
 import plotly.graph_objects as go
 from pandas import DataFrame
@@ -62,10 +64,27 @@ def activity_offset_hisogram(
     if len(activity_df) == 0:
         return None
 
-    # can not use dt since timestamp here should not be normalized to utc
-    activity_df["timezone_offset"] = activity_df["timestamp"].apply(lambda x: x.strftime("%z"))
+    def get_utc_offset_seconds(x: datetime) -> float:
+        offset = x.utcoffset()
+        if offset is None:
+            return 0.0
+        return offset.total_seconds()
 
-    grouped_df: DataFrame = activity_df.groupby("timezone_offset").size().reset_index(name="count")
+    def format_offset(x: datetime) -> str:
+        result: str = x.strftime("%z")
+        return "%s:%s" % (result[:-2], result[-2:])
+
+    # can not use dt since timestamp here should not be normalized to utc
+    activity_df["timezone_offset_numeric"] = activity_df["timestamp"].apply(get_utc_offset_seconds)
+    activity_df["timezone_offset"] = activity_df["timestamp"].apply(format_offset)
+
+    grouped_df: DataFrame = (
+        activity_df.groupby(["timezone_offset_numeric", "timezone_offset"])
+        .size()
+        .reset_index(name="count")
+    )
+
+    grouped_df = grouped_df.sort_values(["timezone_offset_numeric"])
 
     fig = go.Figure()
 
@@ -81,6 +100,9 @@ def activity_offset_hisogram(
 
     fig.update_layout(
         height=height,
+        xaxis=dict(
+            type="category",
+        ),
     )
 
     return PlotlyFigureWidget(fig)
@@ -106,6 +128,14 @@ def activity_by_weekday_2d(
             x=activity_df["weekday"],
             y=activity_df["hour"],
             nbinsy=24,
+            # better reflect small values
+            # colorscale=[
+            #     [0, 'rgb(0,20,60)'],
+            #     [0.2, 'rgb(10,136,186)'],
+            #     [0.5, 'rgb(242,211,56)'],
+            #     [0.75, 'rgb(242,143,56)'],
+            #     [1, 'rgb(217,30,30)']
+            # ],
         ),
     )
 
