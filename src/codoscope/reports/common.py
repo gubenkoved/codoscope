@@ -8,6 +8,7 @@ import tzlocal
 
 from codoscope.datasets import Datasets
 from codoscope.state import StateModel
+from codoscope.widgets.common import WidgetBase
 
 
 class ReportType(enum.StrEnum):
@@ -165,13 +166,15 @@ def render_html_report(path: str, body: str, title: str) -> None:
 
 
 def render_widgets_report(
-    path: str, widgets: typing.Iterable[go.Figure | str | None], title: str
+    path: str, widgets: typing.Iterable[WidgetBase | go.Figure | str | None], title: str
 ) -> None:
     body_items = []
     for widget in widgets:
         if widget is None:
             continue
-        if isinstance(widget, go.Figure):
+        if isinstance(widget, WidgetBase):
+            html = widget.get_html()
+        elif isinstance(widget, go.Figure):
             html = widget.to_html(full_html=False, include_plotlyjs="cdn")
         elif isinstance(widget, str):
             html = widget

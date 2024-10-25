@@ -82,7 +82,7 @@ class PrReviewsReport(ReportBase):
             count = item["count"]
             item["size"] = max(4, math.log(1 + count, 1.3))
 
-        max_reviews_in_pair = max(review_links, key=lambda x: x['count'])['count']
+        max_reviews_in_pair = max(review_links, key=lambda x: x["count"])["count"]
         for link in review_links:
             link["strength"] = 0.1 * link["count"] / max_reviews_in_pair
             link["opacity"] = max(0.1, 0.8 * link["count"] / max_reviews_in_pair)

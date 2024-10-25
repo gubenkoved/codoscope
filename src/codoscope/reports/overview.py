@@ -104,9 +104,15 @@ def people_timeline(df: pandas.DataFrame) -> go.Figure:
     return fig
 
 
-def convert_timestamp_timezone(df: pandas.DataFrame, timezone_name: str | None) -> pandas.DataFrame:
+def convert_timestamp_timezone(
+    df: pandas.DataFrame,
+    timezone_name: str | None,
+    inplace: bool = False,
+) -> pandas.DataFrame:
     if timezone_name:
         LOGGER.debug('converting timestamps to timezone "%s"', timezone_name)
+        if not inplace:
+            df = df.copy()
         df["timestamp"] = pandas.to_datetime(df["timestamp"], utc=True)
         df["timestamp"] = df["timestamp"].dt.tz_convert(timezone_name)
     return df

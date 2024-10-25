@@ -17,6 +17,12 @@ from codoscope.reports.common import (
 from codoscope.reports.overview import activity_scatter, convert_timestamp_timezone
 from codoscope.reports.word_clouds import render_word_cloud_html
 from codoscope.state import StateModel
+from codoscope.widgets.activity_by_weekday import (
+    activity_by_weekday,
+    activity_by_weekday_2d,
+    activity_offset_hisogram,
+)
+from codoscope.widgets.common import CompositeWidget, Widget
 from codoscope.widgets.line_counts_stats import line_counts_stats
 
 LOGGER = logging.getLogger(__name__)
@@ -138,15 +144,58 @@ class PerUserStatsReport(ReportBase):
 
         return fig
 
-    def generate_for_user(self, user_name: str, report_path: str, df: pandas.DataFrame) -> None:
+    def generate_for_user(
+        self,
+        user_name: str,
+        report_path: str,
+        df: pandas.DataFrame,
+        timezone_name: str,
+    ) -> None:
+
+        df_normalized = convert_timestamp_timezone(df, timezone_name)
+
+        # git commits preserve local timezones
+        commits_df: pandas.DataFrame = df[df["activity_type"] == "commit"].copy()
+
+        no_commits_replacement_widget = Widget.centered(
+            '''
+            <div style="padding: 20px; color: gray; text-align: center; font-size: small;">
+                <b>No data</b><br>
+                <i>no commits to build commit based plot<i>
+            </div>
+            '''
+        )
+
         render_widgets_report(
             report_path,
             [
-                activity_scatter(df, extended_mode=True),
-                self.weekly_stats(df),
-                line_counts_stats(df, agg_period="W", title="Weekly Line Counts"),
-                self.emails_timeline(df),
-                self.commit_themes_wordcloud(df),
+                activity_scatter(df_normalized, extended_mode=True),
+                self.weekly_stats(df_normalized),
+                line_counts_stats(df_normalized, agg_period="W", title="Weekly line counts"),
+                self.emails_timeline(df_normalized),
+                CompositeWidget(
+                    [
+                        [
+                            activity_by_weekday(
+                                df_normalized,
+                                title=f"Weekday histogram ({timezone_name})",
+                            ),
+                            activity_by_weekday_2d(
+                                df_normalized,
+                                title=f"Weekday vs. time heatmap ({timezone_name})",
+                            ),
+                            activity_by_weekday_2d(
+                                commits_df,
+                                title="Commit heatmap (local time)",
+                            ) or no_commits_replacement_widget,
+                            activity_offset_hisogram(
+                                commits_df,
+                                title="Commit time offsets",
+                            ) or no_commits_replacement_widget,
+                        ]
+                    ]
+                ),
+                self.commit_themes_wordcloud(df_normalized),
             ],
             title=f"user :: {user_name}",
         )
@@ -155,17 +204,18 @@ class PerUserStatsReport(ReportBase):
         parent_dir_path = os.path.abspath(read_mandatory(config, "dir-path"))
         ensure_dir(parent_dir_path)
 
-        activity_df = datasets.activity
-        activity_df = convert_timestamp_timezone(activity_df, config.get("timezone", "utc"))
+        timezone_name = config.get("timezone", "utc")
 
-        grouped_by_user = activity_df.groupby(["user"])
+        grouped_by_user = datasets.activity.groupby(["user"])
 
         processed_count = 0
         for (user_name,), user_df in grouped_by_user:
-            file_name = sanitize_filename(user_name)
-            file_path = "%s.html" % os.path.join(parent_dir_path, file_name)
             LOGGER.debug('rendering report for user "%s"', user_name)
-            self.generate_for_user(user_name, file_path, user_df)
+
+            file_name: str = sanitize_filename(user_name)
+            file_path: str = "%s.html" % os.path.join(parent_dir_path, file_name)
+
+            self.generate_for_user(user_name, file_path, user_df, timezone_name)
 
             processed_count += 1
             if processed_count % 20 == 0:
