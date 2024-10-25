@@ -5,9 +5,9 @@ from codoscope.reports.common import setup_default_layout
 
 
 def line_counts_stats(
-    acvitiy_df: pandas.DataFrame, agg_period: str = "W", title: str | None = None
+    activity_df: pandas.DataFrame, agg_period: str = "W", title: str | None = None
 ) -> go.Figure | None:
-    df = acvitiy_df.set_index("timestamp")
+    df = activity_df.set_index("timestamp")
 
     # filter leaving only commits
     df = df[df["activity_type"] == "commit"]
