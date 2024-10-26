@@ -14,8 +14,8 @@ from codoscope.reports.common import setup_default_layout, time_axis
 
 LOGGER = logging.getLogger(__name__)
 
-HOVER_TEXT_MAX_ITEM_LEN = 1000
-HOVER_TEXT_WRAP_WIDTH = 140
+HOVER_TEXT_MAX_ITEM_LEN = 800
+HOVER_TEXT_WRAP_WIDTH = 80
 
 
 class HoverDataColumnDescriptor:
