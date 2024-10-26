@@ -152,7 +152,11 @@ class PerUserStatsReport(ReportBase):
         timezone_name: str,
     ) -> None:
 
-        df_normalized = convert_timestamp_timezone(df, timezone_name)
+        df_normalized = convert_timestamp_timezone(
+            df,
+            timezone_name,
+            inplace=False,
+        )
 
         # git commits preserve local timezones
         commits_df: pandas.DataFrame = df[df["activity_type"] == "commit"].copy()

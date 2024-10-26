@@ -2,6 +2,8 @@ import logging
 import os
 import os.path
 
+from pandas import DataFrame
+
 from codoscope.common import ensure_dir_for_path
 from codoscope.config import read_mandatory
 from codoscope.datasets import Datasets
@@ -20,7 +22,7 @@ class UniqueUsersReport(ReportBase):
         out_path = os.path.abspath(read_mandatory(config, "out-path"))
         ensure_dir_for_path(out_path)
 
-        df = datasets.activity
+        df: DataFrame = datasets.activity.copy()
 
         # fill user email with replacement string otherwise they won't be included into groupping
         df["user_email"] = df["user_email"].fillna("")

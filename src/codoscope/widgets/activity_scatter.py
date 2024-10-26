@@ -58,7 +58,9 @@ def get_hover_text(
 #  the size of the plot by removing duplication;
 #  see https://plotly.com/python/hover-text-and-formatting/
 def activity_scatter(
-    activity_df: pandas.DataFrame, extended_mode: bool = False, title: str | None = None
+    activity_df: pandas.DataFrame,
+    extended_mode: bool = False,
+    title: str | None = None,
 ) -> go.Figure | None:
     fig = go.Figure()
 

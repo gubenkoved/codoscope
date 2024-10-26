@@ -107,7 +107,7 @@ class PerSourceStatsReport(ReportBase):
         parent_dir_path = os.path.abspath(read_mandatory(config, "dir-path"))
         ensure_dir(parent_dir_path)
 
-        activity_df = datasets.activity
+        activity_df = datasets.activity.copy()
         activity_df["timestamp"] = pandas.to_datetime(activity_df["timestamp"], utc=True)
 
         grouped_by_source = activity_df.groupby(["source_name"])
