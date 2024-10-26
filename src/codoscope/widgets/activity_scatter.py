@@ -46,6 +46,10 @@ def get_hover_text(
             # limit item len (cut if required)
             item = limit_text_len(item, HOVER_TEXT_MAX_ITEM_LEN)
 
+            item = item.strip()
+            item = item.replace('\n\n', '\n')
+            item = item.replace('\n', '<br>')
+
             # split into lines to avoid too long hover text
             item_lines = textwrap.wrap(
                 item,
@@ -160,6 +164,11 @@ def activity_scatter(
             marker=dict(
                 size=df["size_class"],
             ),
+            # do not limit hover label length
+            # https://github.com/plotly/plotly.js/issues/460
+            hoverlabel=dict(
+                namelength=-1,
+            )
         )
         fig.add_trace(trace)
 
