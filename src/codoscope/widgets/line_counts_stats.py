@@ -2,11 +2,15 @@ import pandas
 import plotly.graph_objects as go
 
 from codoscope.reports.common import setup_default_layout
+from codoscope.widgets.common import PlotlyFigureWidget
 
 
 def line_counts_stats(
-    activity_df: pandas.DataFrame, agg_period: str = "W", title: str | None = None
-) -> go.Figure | None:
+    activity_df: pandas.DataFrame,
+    agg_period: str = "W",
+    title: str | None = None,
+    height: int | None = None,
+) -> PlotlyFigureWidget | None:
     df = activity_df.set_index("timestamp")
 
     # filter leaving only commits
@@ -48,7 +52,6 @@ def line_counts_stats(
     fig.update_layout(
         # yaxis_type="log",
         barmode="group",
-        height=600,
         margin=dict(
             t=50,
         ),
@@ -57,4 +60,4 @@ def line_counts_stats(
         ),
     )
 
-    return fig
+    return PlotlyFigureWidget(fig, height)

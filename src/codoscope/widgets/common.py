@@ -28,8 +28,17 @@ class Widget(WidgetBase):
 
 
 class PlotlyFigureWidget(WidgetBase):
-    def __init__(self, figure: go.Figure):
+    def __init__(
+        self,
+        figure: go.Figure,
+        height: int | None = None,
+    ):
         self.figure = figure
+
+        if height is not None:
+            figure.update_layout(
+                height=height,
+            )
 
     def get_html(self) -> str:
         return self.figure.to_html(full_html=False, include_plotlyjs="cdn")

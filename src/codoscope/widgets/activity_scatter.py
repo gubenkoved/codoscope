@@ -11,6 +11,7 @@ from codoscope.common import (
     format_minutes_offset,
 )
 from codoscope.reports.common import setup_default_layout, time_axis
+from codoscope.widgets.common import PlotlyFigureWidget
 
 LOGGER = logging.getLogger(__name__)
 
@@ -31,7 +32,8 @@ def limit_text_len(text: str, max_len: int) -> str:
 
 
 def get_hover_text(
-    row: tuple[Any, ...], hover_data_columns_map: dict[str, HoverDataColumnDescriptor]
+    row: tuple[Any, ...],
+    hover_data_columns_map: dict[str, HoverDataColumnDescriptor],
 ) -> str:
     items = [f"<b>{row.source_name}</b>"]
     for col_name, col_descriptor in hover_data_columns_map.items():
@@ -47,8 +49,8 @@ def get_hover_text(
             item = limit_text_len(item, HOVER_TEXT_MAX_ITEM_LEN)
 
             item = item.strip()
-            item = item.replace('\n\n', '\n')
-            item = item.replace('\n', '<br>')
+            item = item.replace("\n\n", "\n")
+            item = item.replace("\n", "<br>")
 
             # split into lines to avoid too long hover text
             item_lines = textwrap.wrap(
@@ -69,7 +71,7 @@ def activity_scatter(
     activity_df: pandas.DataFrame,
     extended_mode: bool = False,
     title: str | None = None,
-) -> go.Figure | None:
+) -> PlotlyFigureWidget | None:
     fig = go.Figure()
 
     title = title or "Activity Overview"
@@ -168,8 +170,8 @@ def activity_scatter(
             # https://github.com/plotly/plotly.js/issues/460
             hoverlabel=dict(
                 namelength=-1,
-            )
+            ),
         )
         fig.add_trace(trace)
 
-    return fig
+    return PlotlyFigureWidget(fig)

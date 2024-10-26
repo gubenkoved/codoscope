@@ -17,6 +17,8 @@ from codoscope.reports.common import (
 )
 from codoscope.state import StateModel
 from codoscope.widgets.activity_scatter import activity_scatter
+from codoscope.widgets.common import CompositeWidget
+from codoscope.widgets.simple_activity_histogram import simple_activity_histogram
 
 LOGGER = logging.getLogger(__name__)
 
@@ -155,6 +157,28 @@ class OverviewReport(ReportBase):
             [
                 activity_scatter(activity_df),
                 people_timeline(activity_df),
+                CompositeWidget(
+                    [
+                        [
+                            simple_activity_histogram(
+                                activity_df,
+                                group_by="user",
+                                agg_column="timestamp",
+                                agg_type="min",
+                                agg_period="QE",
+                                title="First contribution by date (quaterly)",
+                            ),
+                            simple_activity_histogram(
+                                activity_df,
+                                group_by="user",
+                                agg_column="timestamp",
+                                agg_type="max",
+                                agg_period="QE",
+                                title="Last contribution by date (quaterly)",
+                            ),
+                        ]
+                    ]
+                ),
             ],
             title="overview",
         )
