@@ -33,25 +33,29 @@ def limit_text_len(text: str, max_len: int) -> str:
 def get_hover_text(
     row: tuple[Any, ...], hover_data_columns_map: dict[str, HoverDataColumnDescriptor]
 ) -> str:
-    text_item = f"<b>{row.source_name}</b><br>"
+    items = [f"<b>{row.source_name}</b>"]
     for col_name, col_descriptor in hover_data_columns_map.items():
         col_val = getattr(row, col_name, None)
         if col_val is not None and not pandas.isna(col_val):
             col_val = col_descriptor.converter(col_val) if col_descriptor.converter else col_val
             if col_descriptor.label:
-                text_item += "<b>%s</b>: %s<br>" % (col_descriptor.label, col_val)
+                item = "<b>%s</b>: %s" % (col_descriptor.label, col_val)
             else:  # no column label
-                text_item += "%s<br>" % col_val
-            text_item = limit_text_len(text_item, HOVER_TEXT_MAX_ITEM_LEN)
+                item = col_val
+
+            # limit item len (cut if required)
+            item = limit_text_len(item, HOVER_TEXT_MAX_ITEM_LEN)
+
             # split into lines to avoid too long hover text
-            text_item_lines = textwrap.wrap(
-                text_item,
+            item_lines = textwrap.wrap(
+                item,
                 break_long_words=False,
                 break_on_hyphens=False,
                 width=HOVER_TEXT_WRAP_WIDTH,
             )
-            text_item = "<br>".join(text_item_lines)
-    return text_item
+            item = "<br>".join(item_lines)
+            items.append(item)
+    return "<br>".join(items)
 
 
 # TODO: consider switching approach to use customdata; this should decrease
@@ -136,8 +140,8 @@ def activity_scatter(
             }
         )
 
-    for (author, activity_type), df in grouped_df:
-        name = "%s %s" % (author, activity_type)
+    for (user, activity_type), df in grouped_df:
+        name = "%s %s" % (user, activity_type)
 
         # compose hover texts all the fields
         texts = []
