@@ -6,7 +6,7 @@ import os.path
 import pandas
 import plotly.graph_objects as go
 
-from codoscope.common import NA_REPLACEMENT, ensure_dir_for_path
+from codoscope.common import NA_REPLACEMENT, convert_timezone, ensure_dir_for_path
 from codoscope.config import read_mandatory, read_optional
 from codoscope.datasets import Datasets
 from codoscope.reports.common import (
@@ -106,20 +106,6 @@ def people_timeline(df: pandas.DataFrame) -> go.Figure:
     return fig
 
 
-def convert_timestamp_timezone(
-    df: pandas.DataFrame,
-    timezone_name: str | None,
-    inplace: bool = False,
-) -> pandas.DataFrame:
-    if timezone_name:
-        LOGGER.debug('converting timestamps to timezone "%s"', timezone_name)
-        if not inplace:
-            df = df.copy()
-        df["timestamp"] = pandas.to_datetime(df["timestamp"], utc=True)
-        df["timestamp"] = df["timestamp"].dt.tz_convert(timezone_name)
-    return df
-
-
 class OverviewReport(ReportBase):
     @classmethod
     def get_type(cls) -> ReportType:
@@ -132,9 +118,9 @@ class OverviewReport(ReportBase):
         # TODO: include somewhere in the report filter and timezone used
         filter_expr = read_optional(config, "filter")
 
-        activity_df = convert_timestamp_timezone(
+        activity_df = convert_timezone(
             datasets.activity,
-            config.get("timezone"),
+            timezone_name=config.get("timezone"),
             inplace=False,
         )
 

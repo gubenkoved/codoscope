@@ -19,6 +19,7 @@ def simple_activity_histogram(
     if len(activity_df) == 0:
         return None
 
+    activity_df = activity_df.copy()
     activity_df["timestamp"] = pandas.to_datetime(activity_df["timestamp"], utc=True)
 
     grouped_df: DataFrame = (

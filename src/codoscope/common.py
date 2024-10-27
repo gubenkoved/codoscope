@@ -2,6 +2,8 @@ import logging
 import os
 import os.path
 
+import pandas
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -38,3 +40,20 @@ def ensure_dir(dir_path: str):
     if not os.path.exists(dir_path):
         LOGGER.info(f'creating directory "{dir_path}"')
         os.makedirs(dir_path)
+
+
+def convert_timezone(
+    df: pandas.DataFrame,
+    column_name: str = "timestamp",
+    timezone_name: str | None = None,
+    inplace: bool = False,
+) -> pandas.DataFrame:
+    if timezone_name:
+        LOGGER.debug(
+            'converting "%s" to timezone "%s" (inplace? %s)', column_name, timezone_name, inplace
+        )
+        if not inplace:
+            df = df.copy()
+        df[column_name] = pandas.to_datetime(df[column_name], utc=True)
+        df[column_name] = df[column_name].dt.tz_convert(timezone_name)
+    return df

@@ -5,7 +5,12 @@ import pandas
 import plotly.graph_objects as go
 import wordcloud
 
-from codoscope.common import NA_REPLACEMENT, ensure_dir, sanitize_filename
+from codoscope.common import (
+    NA_REPLACEMENT,
+    convert_timezone,
+    ensure_dir,
+    sanitize_filename,
+)
 from codoscope.config import read_mandatory
 from codoscope.datasets import Datasets
 from codoscope.reports.common import (
@@ -14,7 +19,7 @@ from codoscope.reports.common import (
     render_widgets_report,
     setup_default_layout,
 )
-from codoscope.reports.overview import activity_scatter, convert_timestamp_timezone
+from codoscope.reports.overview import activity_scatter
 from codoscope.reports.word_clouds import render_word_cloud_html
 from codoscope.state import StateModel
 from codoscope.widgets.activity_by_weekday import (
@@ -152,9 +157,9 @@ class PerUserStatsReport(ReportBase):
         timezone_name: str,
     ) -> None:
 
-        df_normalized = convert_timestamp_timezone(
+        df_normalized = convert_timezone(
             df,
-            timezone_name,
+            timezone_name=timezone_name,
             inplace=False,
         )
 
