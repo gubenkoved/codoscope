@@ -16,6 +16,7 @@ from codoscope.reports.common import (
     setup_default_layout,
 )
 from codoscope.state import StateModel
+from codoscope.widgets.active_contributors_count import active_contributors_count
 from codoscope.widgets.activity_scatter import activity_scatter
 from codoscope.widgets.common import CompositeWidget
 from codoscope.widgets.simple_activity_histogram import simple_activity_histogram
@@ -153,6 +154,7 @@ class OverviewReport(ReportBase):
                                 agg_type="min",
                                 agg_period="QE",
                                 title="First contribution by date (quaterly)",
+                                height=600,
                             ),
                             simple_activity_histogram(
                                 activity_df,
@@ -161,6 +163,12 @@ class OverviewReport(ReportBase):
                                 agg_type="max",
                                 agg_period="QE",
                                 title="Last contribution by date (quaterly)",
+                                height=600,
+                            ),
+                            active_contributors_count(
+                                activity_df,
+                                title="Active contributors count",
+                                height=600,
                             ),
                         ]
                     ]
