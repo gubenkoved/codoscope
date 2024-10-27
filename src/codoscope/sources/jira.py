@@ -12,17 +12,43 @@ LOGGER = logging.getLogger(__name__)
 
 
 class ActorModel(VersionedState):
-    def __init__(self, account_id: str, display_name: str, email: str | None):
+    def __init__(
+        self,
+        account_id: str,
+        display_name: str,
+        email: str | None,
+    ):
         self.account_id: str = account_id
         self.display_name: str = display_name
         self.email: str | None = email
 
 
 class JiraCommentModel(VersionedState):
-    def __init__(self, message: str, created_by: ActorModel, created_on: datetime.datetime):
+    def __init__(
+        self,
+        message: str,
+        created_by: ActorModel,
+        created_on: datetime.datetime,
+    ):
         self.message: str = message
         self.created_by: ActorModel = created_by
         self.created_on: datetime.datetime = created_on
+
+
+class JiraChangeLogItemModel(VersionedState):
+    def __init__(
+        self,
+        actor: ActorModel | None,
+        created_on: datetime.datetime,
+        field: str,
+        from_value: str | None,
+        to_value: str | None,
+    ):
+        self.actor: ActorModel = actor
+        self.created_on: datetime.datetime = created_on
+        self.field: str = field
+        self.from_value: str | None = from_value
+        self.to_value: str | None = to_value
 
 
 class JiraItemModel(VersionedState):
@@ -41,6 +67,7 @@ class JiraItemModel(VersionedState):
         components: list[str] | None,
         labels: list[str] | None,
         comments: list[JiraCommentModel] | None,
+        change_log: list[JiraChangeLogItemModel] | None,
         created_on: datetime.datetime,
         updated_on: datetime.datetime | None,
     ):
@@ -57,6 +84,7 @@ class JiraItemModel(VersionedState):
         self.components: list[str] | None = components
         self.labels: list[str] | None = labels
         self.comments: list[JiraCommentModel] | None = comments
+        self.change_log: list[JiraChangeLogItemModel] | None = change_log
         self.created_on: datetime.datetime | None = created_on
         self.updated_on: datetime.datetime | None = updated_on
 
@@ -143,6 +171,30 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
             for comment in data
         ]
 
+    def replace_empty_string(string: str | None) -> str | None:
+        if not string:
+            return None
+        return string
+
+    def convert_change_log(data, included_fields) -> list[JiraChangeLogItemModel]:
+        if not data:
+            return []
+        change_log = []
+        for history_item in data["histories"]:
+            for subitem in history_item["items"]:
+                if subitem["field"] not in included_fields:
+                    continue
+                change_log.append(
+                    JiraChangeLogItemModel(
+                        actor=convert_actor(history_item.get("author")),
+                        created_on=dateutil.parser.parse(history_item["created"]),
+                        field=subitem["field"],
+                        from_value=replace_empty_string(subitem.get("fromString")),
+                        to_value=replace_empty_string(subitem.get("toString")),
+                    )
+                )
+        return change_log
+
     cutoff_date = state.cutoff_date
 
     if config.get("cutoff-date"):
@@ -157,7 +209,12 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
     start = 0
 
     while True:
-        response = jira.jql(query, start=start, limit=limit)
+        response = jira.jql(
+            query,
+            start=start,
+            limit=limit,
+            expand="changelog,comments",
+        )
 
         if not response["issues"]:
             break
@@ -179,6 +236,7 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
                 convert_components(fields.get("components")),
                 fields.get("labels"),
                 convert_comments(fields.get("comment", {}).get("comments")),
+                convert_change_log(issue.get("changelog"), included_fields=["status"]),
                 dateutil.parser.parse(fields["created"]),
                 dateutil.parser.parse(fields["updated"]),
             )
