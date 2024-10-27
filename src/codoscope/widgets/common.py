@@ -45,8 +45,13 @@ class PlotlyFigureWidget(WidgetBase):
 
 
 class CompositeWidget(WidgetBase):
-    def __init__(self, rows: list[list[WidgetBase | None]]) -> None:
+    def __init__(
+        self,
+        rows: list[list[WidgetBase | None]],
+        padding: int = 1,
+    ) -> None:
         self.rows: list[list[WidgetBase | None]] = rows
+        self.padding: int = padding
 
     def get_html(self) -> str:
         id_ = "container-%s" % uuid.uuid4()
@@ -54,12 +59,13 @@ class CompositeWidget(WidgetBase):
         for row in self.rows:
             html += f'<div style="display: flex;">'
             for widget in row:
-                html += '<div style="flex: 1; padding: 10px;">'
+                html += f'<div style="flex: 1; padding: {self.padding}px;">'
                 if widget is None:
                     widget = Widget.centered("<i>No data</i>")
                 html += widget.get_html()
                 html += "</div>"
             html += f"</div>"
+
         # trigger resize so that plotly graphs can realize correct width for them
         html += f"""
         <script>
