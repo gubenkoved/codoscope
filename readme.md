@@ -32,9 +32,15 @@ reports:
     timezone: "Europe/Amsterdam"
     out-path: reports/overview.html
 
-  - name: user-contributions
-    type: user-contributions
-    dir-path: reports/per-user
+  - name: per-source-stats
+    type: per-source-stats
+    timezone: utc
+    out-dir: reports/per-source-stats
+
+  - name: per-user-stats
+    type: per-user-stats
+    timezone: utc
+    out-dir: reports/per-user-stats
 
   - name: word-clouds
     type: word-clouds

@@ -35,26 +35,26 @@ ingestion:
 reports:
   - name: overview
     type: overview
-    out-path: overview.html
+    out-path: reports/overview.html
 
   - name: overview-filtered
     type: overview
     enabled: true
-    out-path: overview-filtered.html
+    out-path: reports/overview-filtered.html
     filter: "'John' in user"
 
   - name: overview-tz-normalized
     type: overview
     timezone: "Europe/Amsterdam"
-    out-path: overview-2.html
+    out-path: reports/overview-2.html
 
-  - name: user-contributions
-    type: user-contributions
-    dir-path: contributions
+  - name: per-user-stats
+    type: per-user-stats
+    out-dir: reports/per-user-stats
 
   - name: per-source-stats
     type: per-source-stats
-    dir-path: per-source-stats
+    out-dir: reports/per-source-stats
 
   - name: pr-reviews
     type: pr-reviews

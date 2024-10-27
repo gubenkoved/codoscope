@@ -104,7 +104,7 @@ class PerSourceStatsReport(ReportBase):
         )
 
     def generate(self, config: dict, state: StateModel, datasets: Datasets) -> None:
-        parent_dir_path = os.path.abspath(read_mandatory(config, "dir-path"))
+        parent_dir_path = os.path.abspath(read_mandatory(config, "out-dir"))
         ensure_dir(parent_dir_path)
 
         activity_df = datasets.activity.copy()
