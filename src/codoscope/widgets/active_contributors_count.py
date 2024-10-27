@@ -62,11 +62,14 @@ def active_contributors_count(
 
     fig.add_trace(
         go.Scatter(
+            name='count',
             x=counts_df["timestamp"],
             y=counts_df["count"],
             text=counts_df["event"],
             mode="lines+markers",
-            hovertemplate="%{x}<br>%{text}",
+            # empty extra hides the trace name
+            hovertemplate="%{x}<br>%{text}<extra></extra>",
+            hoverlabel=None,
             marker=dict(
                 size=2.5,
             ),
