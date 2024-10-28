@@ -20,6 +20,7 @@ from codoscope.reports.common import (
 )
 from codoscope.state import SourceType, StateModel
 from codoscope.widgets.aggregated_counts import aggregated_counts
+from codoscope.widgets.common import PlotlyFigureWidget
 from codoscope.widgets.line_counts_stats import line_counts_stats
 
 LOGGER = logging.getLogger(__name__)
@@ -30,7 +31,7 @@ class PerSourceStatsReport(ReportBase):
     def get_type(cls) -> ReportType:
         return ReportType.PER_SOURCE_STATS
 
-    def weekly_stats_by_user(self, df: pandas.DataFrame) -> go.Figure:
+    def weekly_stats_by_user(self, df: pandas.DataFrame) -> PlotlyFigureWidget:
         df = df.set_index("timestamp")
         df["user"] = df["user"].fillna(NA_REPLACEMENT)
         df["activity_type"] = df["activity_type"].fillna(NA_REPLACEMENT)
@@ -41,9 +42,7 @@ class PerSourceStatsReport(ReportBase):
         fig = go.Figure()
         for (author, activity_type), group_df in grouped_by_user_activity:
             weekly_counts = group_df.resample("W").size().reset_index(name="count")
-
             trace_name = "%s %s" % (author, activity_type)
-
             fig.add_trace(
                 go.Bar(
                     name=trace_name,
@@ -59,7 +58,7 @@ class PerSourceStatsReport(ReportBase):
             showlegend=True,  # ensure legend even for single series
         )
 
-        return fig
+        return PlotlyFigureWidget(fig)
 
     def generate_for_source(
         self,
@@ -68,7 +67,7 @@ class PerSourceStatsReport(ReportBase):
         report_path: str,
         df: pandas.DataFrame,
     ):
-        widgets: list[go.Figure | None] = [
+        widgets: list[PlotlyFigureWidget | None] = [
             aggregated_counts(
                 df,
                 group_by=["activity_type"],

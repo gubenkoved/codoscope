@@ -18,6 +18,10 @@ class Widget(WidgetBase):
         return self.html
 
     @classmethod
+    def from_html(cls, html: str) -> "Widget":
+        return Widget(html)
+
+    @classmethod
     def centered(cls, inner: str) -> "Widget":
         html = '<div style="display: flex; justify-content: center; align-items: center; height: 100%;">'
         html += "<div>"

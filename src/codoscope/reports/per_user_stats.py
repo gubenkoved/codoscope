@@ -28,7 +28,7 @@ from codoscope.widgets.activity_by_weekday import (
     activity_offset_hisogram,
 )
 from codoscope.widgets.aggregated_counts import aggregated_counts
-from codoscope.widgets.common import CompositeWidget, Widget
+from codoscope.widgets.common import CompositeWidget, PlotlyFigureWidget, Widget
 from codoscope.widgets.line_counts_stats import line_counts_stats
 
 LOGGER = logging.getLogger(__name__)
@@ -39,7 +39,10 @@ class PerUserStatsReport(ReportBase):
     def get_type(cls) -> ReportType:
         return ReportType.PER_USER_STATS
 
-    def commit_themes_wordcloud(self, df: pandas.DataFrame) -> str | None:
+    def commit_themes_wordcloud(
+        self,
+        df: pandas.DataFrame,
+    ) -> Widget | None:
         df = df.set_index("timestamp")
 
         # filter leaving only commits
@@ -69,14 +72,16 @@ class PerUserStatsReport(ReportBase):
         wc.generate(text)
         svg = render_word_cloud_html(wc)
 
-        return f"""
+        return Widget.from_html(
+            f"""
 <div style="padding: 20px">
     <h2>Commit themes</h2>
     {svg}
 </div>
 """
+        )
 
-    def emails_timeline(self, df: pandas.DataFrame) -> go.Figure:
+    def emails_timeline(self, df: pandas.DataFrame) -> PlotlyFigureWidget:
         df["user_email"] = df["user_email"].fillna(NA_REPLACEMENT)
 
         email_stats = (
@@ -117,7 +122,7 @@ class PerUserStatsReport(ReportBase):
             ),
         )
 
-        return fig
+        return PlotlyFigureWidget(fig)
 
     def generate_for_user(
         self,

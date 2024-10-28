@@ -18,7 +18,7 @@ from codoscope.reports.common import (
 from codoscope.state import StateModel
 from codoscope.widgets.active_contributors_count import active_contributors_count
 from codoscope.widgets.activity_scatter import activity_scatter
-from codoscope.widgets.common import CompositeWidget
+from codoscope.widgets.common import CompositeWidget, PlotlyFigureWidget
 from codoscope.widgets.simple_activity_histogram import simple_activity_histogram
 
 LOGGER = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ def apply_filter(df: pandas.DataFrame, expr: str) -> pandas.DataFrame:
     return df[filtered_df]
 
 
-def people_timeline(df: pandas.DataFrame) -> go.Figure:
+def people_timeline(df: pandas.DataFrame) -> PlotlyFigureWidget:
     df["user"] = df["user"].fillna(NA_REPLACEMENT)
 
     timestamp_range = [
@@ -104,7 +104,7 @@ def people_timeline(df: pandas.DataFrame) -> go.Figure:
         showlegend=True,
     )
 
-    return fig
+    return PlotlyFigureWidget(fig)
 
 
 class OverviewReport(ReportBase):
