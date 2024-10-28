@@ -6,6 +6,7 @@ from datetime import datetime
 import plotly.graph_objects as go
 import tzlocal
 
+from codoscope.common import render_jinja_template
 from codoscope.datasets import Datasets
 from codoscope.state import StateModel
 from codoscope.widgets.common import WidgetBase
@@ -51,7 +52,7 @@ def setup_default_layout(fig: go.Figure, title: str | None = None) -> None:
             nticks=30,
             showline=True,
             linewidth=1.5,
-            linecolor='gray',
+            linecolor="gray",
             mirror=True,
         ),
         yaxis=dict(
@@ -62,7 +63,7 @@ def setup_default_layout(fig: go.Figure, title: str | None = None) -> None:
             nticks=20,
             showline=True,
             linewidth=1.5,
-            linecolor='gray',
+            linecolor="gray",
             mirror=True,
         ),
         yaxis2=dict(
@@ -89,76 +90,13 @@ def render_html_report(path: str, body: str, title: str) -> None:
     now = datetime.now(local_tz)
     tz_name = local_tz.tzname(now)
 
-    # TODO: consider using JINJA template instead
-    html = """
-<html>
-    <head>
-    <title>codoscope :: ##TITLE##</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400;1,700&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: "Ubuntu";
-            overflow-y: scroll; /* Always show vertical scrollbar */
-        }
-
-        .loader-wrapper {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #fff;
-            z-index: 9999;
-        }
-
-        .loader {
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #3498db;
-            border-radius: 50%;
-            width: 120px;
-            height: 120px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
-</head>
-<body>
-    <div id="loader-wrapper" class="loader-wrapper">
-        <div id="loader" class="loader"></div>
-    </div>
-    <div id="content">
-        ##BODY##
-        <div style="color: lightgray; font-size: 11px; text-align: center;">
-            <i>generated on ##GENERATED_ON##</i>
-        </div>
-    </div>
-
-    <script>
-        window.addEventListener('load', function() {
-            document.getElementById('loader-wrapper').style.display = 'none';
-        });
-    </script>
-</body>
-</html>
-"""
-
-    html = (
-        html.replace("##TITLE##", title)
-        .replace("##BODY##", body)
-        .replace(
-            "##GENERATED_ON##",
-            "%s %s" % (now.strftime("%B %d, %Y at %H:%M:%S"), tz_name),
-        )
+    html: str = render_jinja_template(
+        "report.html.jinja2",
+        context={
+            "title": f"codoscope :: {title}",
+            "body": body,
+            "generated_on": "%s %s" % (now.strftime("%B %d, %Y at %H:%M:%S"), tz_name),
+        },
     )
 
     with open(path, "w") as f:

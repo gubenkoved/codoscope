@@ -99,7 +99,7 @@ def line_counts_stats(
                 y=cumulative_df["lines_delta"],
                 mode="lines",
                 line=dict(
-                    color="#6f1fb5", # dark purple
+                    color="#6f1fb5",  # dark purple
                     width=1.5,
                 ),
             ),

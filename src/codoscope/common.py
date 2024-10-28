@@ -2,12 +2,15 @@ import logging
 import os
 import os.path
 
+import jinja2
 import pandas
 
 LOGGER = logging.getLogger(__name__)
 
 
 NA_REPLACEMENT = "unspecified"
+MODULE_DIR: str = os.path.dirname(__file__)
+TEMPLATES_DIR: str = os.path.join(MODULE_DIR, "templates")
 
 
 def date_time_minutes_offset(datetime):
@@ -57,3 +60,12 @@ def convert_timezone(
         df[column_name] = pandas.to_datetime(df[column_name], utc=True)
         df[column_name] = df[column_name].dt.tz_convert(timezone_name)
     return df
+
+
+def render_jinja_template(template_name: str, context: dict) -> str:
+    jinja_env = jinja2.Environment()
+    with open(os.path.join(TEMPLATES_DIR, template_name)) as f:
+        template_text = f.read()
+        template = jinja_env.from_string(template_text)
+        rendered_text = template.render(context)
+        return rendered_text

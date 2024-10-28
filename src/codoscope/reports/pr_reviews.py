@@ -4,19 +4,13 @@ import math
 import os
 import os.path
 
-import jinja2
-
-from codoscope.common import ensure_dir_for_path
+from codoscope.common import ensure_dir_for_path, render_jinja_template
 from codoscope.config import read_mandatory, read_optional
 from codoscope.datasets import Datasets
 from codoscope.reports.common import ReportBase, ReportType
 from codoscope.state import StateModel
 
 LOGGER = logging.getLogger(__name__)
-
-
-MODULE_DIR: str = os.path.dirname(__file__)
-TEMPLATE_PATH = os.path.join(MODULE_DIR, "templates/reviews.html.jinja2")
 
 
 class PrReviewsReport(ReportBase):
@@ -87,17 +81,13 @@ class PrReviewsReport(ReportBase):
             link["strength"] = 0.1 * link["count"] / max_reviews_in_pair
             link["opacity"] = max(0.1, 0.8 * link["count"] / max_reviews_in_pair)
 
-        jinja_env = jinja2.Environment()
-        with open(os.path.join(TEMPLATE_PATH)) as f:
-            template_text = f.read()
-            template = jinja_env.from_string(template_text)
-            rendered_text = template.render(
-                {
+        with open(out_path, "w") as out_file:
+            rendered_text = render_jinja_template(
+                "reviews.html.jinja2",
+                context={
                     "title": "Reviewers",
                     "review_links": review_links,
                     "user_info_map": user_info_map,
-                }
+                },
             )
-
-        with open(out_path, "w") as out_file:
             out_file.write(rendered_text)
