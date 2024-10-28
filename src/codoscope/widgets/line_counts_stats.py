@@ -13,18 +13,18 @@ def line_counts_stats(
     height: int | None = None,
     include_cumulative: bool = True,
 ) -> PlotlyFigureWidget | None:
-    df = activity_df.set_index("timestamp")
+    df = activity_df.set_index("timestamp").sort_index()
 
     # filter leaving only commits
-    df = df[df["activity_type"] == "commit"]
+    filtered_df = df[df["activity_type"] == "commit"]
 
     # do not include merge commits
-    df = df[df["commit_is_merge_commit"] == False]
+    filtered_df = filtered_df[filtered_df["commit_is_merge_commit"] == False]
 
-    if len(df) == 0:
+    if len(filtered_df) == 0:
         return None
 
-    resampled_df = df.resample(agg_period).agg(
+    resampled_df = filtered_df.resample(agg_period).agg(
         {
             "commit_added_lines": "sum",
             "commit_removed_lines": "sum",
@@ -61,8 +61,7 @@ def line_counts_stats(
 
     if include_cumulative:
         # pandas cumsum requires index to be present
-        cumulative_df = activity_df.set_index("timestamp").sort_index()
-        cumulative_df = cumulative_df[["commit_added_lines", "commit_removed_lines"]]
+        cumulative_df = filtered_df[["commit_added_lines", "commit_removed_lines"]].copy()
         cumulative_df["lines_delta"] = (
             cumulative_df["commit_added_lines"] - cumulative_df["commit_removed_lines"]
         )
@@ -74,7 +73,7 @@ def line_counts_stats(
                 y=cumulative_df["lines_delta"],
                 mode="lines",
                 line=dict(
-                    color="#36454F",  # charcoal gray
+                    color="#107194",  # darker blue
                     width=2,
                 ),
             ),

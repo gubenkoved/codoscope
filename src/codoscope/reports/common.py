@@ -42,12 +42,17 @@ def setup_default_layout(fig: go.Figure, title: str | None = None) -> None:
         # title_font_variant='small-caps',
         font_family="Ubuntu",
         plot_bgcolor="white",
+        paper_bgcolor="white",  # Outer background (around the plot)
         xaxis=dict(
             showgrid=True,
             gridcolor="lightgray",
             gridwidth=1,
             griddash="dot",
             nticks=30,
+            showline=True,
+            linewidth=1.5,
+            linecolor='gray',
+            mirror=True,
         ),
         yaxis=dict(
             showgrid=True,
@@ -55,22 +60,17 @@ def setup_default_layout(fig: go.Figure, title: str | None = None) -> None:
             gridwidth=1,
             griddash="dot",
             nticks=20,
+            showline=True,
+            linewidth=1.5,
+            linecolor='gray',
+            mirror=True,
         ),
-        shapes=[  # Add an outer border
-            dict(
-                type="rect",
-                xref="paper",
-                yref="paper",  # Reference the entire paper (plot area)
-                x0=0,
-                y0=0,
-                x1=1,
-                y1=1,
-                line=dict(
-                    color="gray",
-                    width=1.2,
-                ),
-            )
-        ],
+        yaxis2=dict(
+            # there is no good way to control the spacing between axis and tick
+            # labels, but we can add a prefix to tick labels
+            # see https://stackoverflow.com/questions/63457187
+            tickprefix=" ",
+        ),
         legend=dict(
             traceorder="normal",  # use the order in which traces were added
         ),
