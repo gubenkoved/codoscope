@@ -27,6 +27,7 @@ from codoscope.widgets.activity_by_weekday import (
     activity_by_weekday_2d,
     activity_offset_hisogram,
 )
+from codoscope.widgets.aggregated_counts import aggregated_counts
 from codoscope.widgets.common import CompositeWidget, Widget
 from codoscope.widgets.line_counts_stats import line_counts_stats
 
@@ -37,39 +38,6 @@ class PerUserStatsReport(ReportBase):
     @classmethod
     def get_type(cls) -> ReportType:
         return ReportType.PER_USER_STATS
-
-    def weekly_stats(self, df: pandas.DataFrame) -> go.Figure:
-        df = df.set_index("timestamp")
-        df["activity_type"] = df["activity_type"].fillna(NA_REPLACEMENT)
-
-        grouped = df.groupby(["source_name", "activity_type"])
-
-        fig = go.Figure()
-        for (
-            source_name,
-            activity_type,
-        ), group_df in grouped:
-            weekly_counts = group_df.resample("W").size().reset_index(name="count")
-            fig.add_trace(
-                go.Bar(
-                    name=f"{source_name} {activity_type}",
-                    x=weekly_counts["timestamp"],
-                    y=weekly_counts["count"],
-                )
-            )
-
-        setup_default_layout(fig, "Weekly Counts")
-
-        fig.update_layout(
-            barmode="stack",
-            showlegend=True,  # ensure legend even for single series
-            # do not limit the hover label length
-            hoverlabel=dict(
-                namelength=-1,
-            ),
-        )
-
-        return fig
 
     def commit_themes_wordcloud(self, df: pandas.DataFrame) -> str | None:
         df = df.set_index("timestamp")
@@ -181,7 +149,12 @@ class PerUserStatsReport(ReportBase):
             report_path,
             [
                 activity_scatter(df_normalized, extended_mode=True),
-                self.weekly_stats(df_normalized),
+                aggregated_counts(
+                    df_normalized,
+                    group_by=["source_name", "activity_type"],
+                    agg_period="W",
+                    title="Weekly counts",
+                ),
                 line_counts_stats(df_normalized, agg_period="W", title="Weekly line counts"),
                 self.emails_timeline(df_normalized),
                 CompositeWidget(

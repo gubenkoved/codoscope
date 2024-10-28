@@ -4,7 +4,12 @@ import os.path
 import pandas
 import plotly.graph_objects as go
 
-from codoscope.common import NA_REPLACEMENT, ensure_dir, sanitize_filename
+from codoscope.common import (
+    NA_REPLACEMENT,
+    convert_timezone,
+    ensure_dir,
+    sanitize_filename,
+)
 from codoscope.config import read_mandatory
 from codoscope.datasets import Datasets
 from codoscope.reports.common import (
@@ -14,6 +19,7 @@ from codoscope.reports.common import (
     setup_default_layout,
 )
 from codoscope.state import SourceType, StateModel
+from codoscope.widgets.aggregated_counts import aggregated_counts
 from codoscope.widgets.line_counts_stats import line_counts_stats
 
 LOGGER = logging.getLogger(__name__)
@@ -23,36 +29,6 @@ class PerSourceStatsReport(ReportBase):
     @classmethod
     def get_type(cls) -> ReportType:
         return ReportType.PER_SOURCE_STATS
-
-    def weekly_stats(self, df: pandas.DataFrame) -> go.Figure:
-        df = df.set_index("timestamp")
-        df["activity_type"] = df["activity_type"].fillna(NA_REPLACEMENT)
-
-        grouped_by_activity = df.groupby(["activity_type"])
-
-        fig = go.Figure()
-        for (activity_type,), group_df in grouped_by_activity:
-            weekly_counts = group_df.resample("W").size().reset_index(name="count")
-            fig.add_trace(
-                go.Bar(
-                    name=activity_type,
-                    x=weekly_counts["timestamp"],
-                    y=weekly_counts["count"],
-                )
-            )
-
-        setup_default_layout(fig, "Weekly Stats")
-
-        fig.update_layout(
-            barmode="stack",
-            showlegend=True,  # ensure legend even for single series
-            # do not limit the hover label length
-            hoverlabel=dict(
-                namelength=-1,
-            ),
-        )
-
-        return fig
 
     def weekly_stats_by_user(self, df: pandas.DataFrame) -> go.Figure:
         df = df.set_index("timestamp")
@@ -93,13 +69,23 @@ class PerSourceStatsReport(ReportBase):
         df: pandas.DataFrame,
     ):
         widgets: list[go.Figure | None] = [
-            self.weekly_stats(df),
+            aggregated_counts(
+                df,
+                group_by=["activity_type"],
+                agg_period="W",
+                title="Weekly counts",
+            ),
             self.weekly_stats_by_user(df),
         ]
 
         source_state = state.sources[source_name]
         if source_state.source_type == SourceType.GIT:
-            widgets.append(line_counts_stats(df, agg_period="W", title="Weekly Line Counts"))
+            line_counts_widget = line_counts_stats(
+                df,
+                agg_period="W",
+                title="Weekly Line Counts",
+            )
+            widgets.append(line_counts_widget)
 
         render_widgets_report(
             report_path,
@@ -111,8 +97,7 @@ class PerSourceStatsReport(ReportBase):
         parent_dir_path = os.path.abspath(read_mandatory(config, "out-dir"))
         ensure_dir(parent_dir_path)
 
-        activity_df = datasets.activity.copy()
-        activity_df["timestamp"] = pandas.to_datetime(activity_df["timestamp"], utc=True)
+        activity_df = convert_timezone(datasets.activity, timezone_name="utc")
 
         grouped_by_source = activity_df.groupby(["source_name"])
 
