@@ -77,6 +77,9 @@ def setup_default_layout(fig: go.Figure, title: str | None = None) -> None:
         hoverlabel=dict(
             font_size=12,
             font_family="Ubuntu",
+            # do not limit the hover label length
+            # https://github.com/plotly/plotly.js/issues/460
+            namelength=-1,
         ),
     )
 

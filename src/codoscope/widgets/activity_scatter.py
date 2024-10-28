@@ -166,11 +166,6 @@ def activity_scatter(
             marker=dict(
                 size=df["size_class"],
             ),
-            # do not limit hover label length
-            # https://github.com/plotly/plotly.js/issues/460
-            hoverlabel=dict(
-                namelength=-1,
-            ),
         )
         fig.add_trace(trace)
 
