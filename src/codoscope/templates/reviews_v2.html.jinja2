@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{title}}</title>
+  <script src="https://unpkg.com/force-graph"></script>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      /* prevent scrollbars */
+    }
+  </style>
+</head>
+
+<body>
+  <div id="container"></div>
+  <script>
+    const nodes = [
+      {% for name, info in user_info_map.items() -%}
+          { id: "{{name}}", color: "{{info.color}}", count: {{info.count}} },
+      {% endfor %}
+    ];
+
+    const links = [
+      {% for link in review_links -%}
+          { source: "{{link.reviewer}}", target: "{{link.reviewee}}", count: {{link.count}} },
+      {% endfor %}
+    ];
+  </script>
+  <script>
+    const container = document.getElementById("container");
+    const myGraph = ForceGraph();
+    myGraph(container)
+      .nodeVal((node) => {
+        return node.size;
+      })
+      .linkWidth((link) => {
+        return Math.min(10, Math.max(0.5, Math.log(link.count, 2) - 2));
+      })
+      .linkDirectionalArrowLength((link) => {
+        return Math.min(10, Math.max(0.5, Math.log(link.count, 2) - 2));
+      })
+      .linkDirectionalArrowRelPos(0.7)
+      .nodeCanvasObject((node, ctx, globalScale) => {
+        const label = node.id;
+        const fontSizeExtra = Math.log(node.count, 2);
+        const fontSize = (10 + fontSizeExtra) / globalScale;
+        ctx.font = `${fontSize}px Sans-Serif`;
+        const textWidth = ctx.measureText(label).width;
+        const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.2); // some padding
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.fillRect(node.x - bckgDimensions[0] / 2, node.y - bckgDimensions[1] / 2, ...bckgDimensions);
+
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = node.color;
+        ctx.fillText(label, node.x, node.y);
+
+        node.__bckgDimensions = bckgDimensions; // to re-use in nodePointerAreaPaint
+      })
+      .nodePointerAreaPaint((node, color, ctx) => {
+        ctx.fillStyle = color;
+        const bckgDimensions = node.__bckgDimensions;
+        bckgDimensions && ctx.fillRect(node.x - bckgDimensions[0] / 2, node.y - bckgDimensions[1] / 2, ...bckgDimensions);
+      })
+      .graphData({
+        "nodes": nodes,
+        "links": links,
+      });
+  </script>
+</body>
+</html>

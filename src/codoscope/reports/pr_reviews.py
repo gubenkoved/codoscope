@@ -36,7 +36,6 @@ class PrReviewsReport(ReportBase):
         user_info_map = collections.defaultdict(
             lambda: {
                 "count": 0,
-                "count_normalized": 0.0,
                 "color": "#3777de",
             }
         )
@@ -60,8 +59,6 @@ class PrReviewsReport(ReportBase):
                     "reviewer": reviewer,
                     "reviewee": reviewee,
                     "count": count,
-                    "width": min(3, max(1, math.log(count, 2) - 5)),
-                    "opacity": 0.3,
                 }
             )
 
@@ -70,22 +67,13 @@ class PrReviewsReport(ReportBase):
         threshold = read_optional(config, "threshold", 10)
         review_links = [x for x in review_links if x["count"] >= threshold]
 
-        LOGGER.info("links count over threshold: %d", len(review_links))
-
-        for item in user_info_map.values():
-            count = item["count"]
-            item["size"] = max(4, math.log(1 + count, 1.3))
-
-        max_reviews_in_pair = max(review_links, key=lambda x: x["count"])["count"]
-        for link in review_links:
-            link["strength"] = 0.1 * link["count"] / max_reviews_in_pair
-            link["opacity"] = max(0.1, 0.8 * link["count"] / max_reviews_in_pair)
+        LOGGER.info("links count over threshold %d is %d", threshold, len(review_links))
 
         with open(out_path, "w") as out_file:
             rendered_text = render_jinja_template(
-                "reviews.html.jinja2",
+                "reviews_v2.html.jinja2",
                 context={
-                    "title": "Reviewers",
+                    "title": "codoscope :: reviewers",
                     "review_links": review_links,
                     "user_info_map": user_info_map,
                 },
