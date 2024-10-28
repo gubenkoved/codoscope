@@ -62,12 +62,12 @@ def run_processors(config: dict, datasets: Datasets) -> None:
             raise ConfigError('unknown processor type: "%s"' % processor_type)
 
 
-def process(config: dict):
+def process(config: dict, skip_ingestion: bool = False):
     state_path = read_mandatory(config, "state-path")
     state = StateModel.load(state_path) or StateModel()
 
     ingestion_config = config.get("ingestion", {})
-    if ingestion_config.get("enabled", True):
+    if ingestion_config.get("enabled", True) and not skip_ingestion:
         ingestion_rounds = ingestion_config.get("rounds", 1)
         for round_idx in range(1, ingestion_rounds + 1):
             LOGGER.info("ingestion round #%d of %d", round_idx, ingestion_rounds)

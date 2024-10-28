@@ -17,8 +17,14 @@ def entrypoint():
     parser.add_argument("--log-level", type=str, default="INFO", help="Log level")
 
     subparsers = parser.add_subparsers(dest="command")
-    _ = subparsers.add_parser("process")
+    process_parser = subparsers.add_parser("process")
     _ = subparsers.add_parser("discover-aliases")
+
+    process_parser.add_argument(
+        "--skip-ingestion",
+        action="store_true",
+        help="Skip ingestion irrespective of the config",
+    )
 
     args = parser.parse_args()
 
@@ -31,7 +37,10 @@ def entrypoint():
     LOGGER.debug("args: %r", args)
 
     if args.command == "process":
-        core.process(config)
+        core.process(
+            config,
+            skip_ingestion=args.skip_ingestion,
+        )
     elif args.command == "discover-aliases":
         discover_aliases(config)
     else:
