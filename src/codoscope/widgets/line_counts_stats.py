@@ -16,6 +16,9 @@ def line_counts_stats(
     # filter leaving only commits
     df = df[df["activity_type"] == "commit"]
 
+    # do not include merge commits
+    df = df[df["commit_is_merge_commit"] == False]
+
     if len(df) == 0:
         return None
 
@@ -35,7 +38,9 @@ def line_counts_stats(
             name=f"lines added",
             x=resampled_df["timestamp"],
             y=resampled_df["commit_added_lines"],
-            marker_color="#2296bf",  # blue-ish
+            marker=dict(
+                color="#2296bf",  # blue-ish
+            ),
         )
     )
     fig.add_trace(
@@ -43,18 +48,16 @@ def line_counts_stats(
             name=f"lines removed",
             x=resampled_df["timestamp"],
             y=resampled_df["commit_removed_lines"],
-            marker_color="#e25548",  # red-ish
+            marker=dict(
+                color="#e25548",  # red-ish
+            ),
         )
     )
 
     setup_default_layout(fig, title or "Line counts")
 
     fig.update_layout(
-        # yaxis_type="log",
         barmode="group",
-        margin=dict(
-            t=50,
-        ),
         yaxis=dict(
             type="log",
         ),

@@ -74,13 +74,10 @@ def setup_default_layout(fig: go.Figure, title: str | None = None) -> None:
         legend=dict(
             traceorder="normal",  # use the order in which traces were added
         ),
-    )
-
-    fig.update_layout(
         hoverlabel=dict(
             font_size=12,
             font_family="Ubuntu",
-        )
+        ),
     )
 
 
