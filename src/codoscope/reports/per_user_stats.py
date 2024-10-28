@@ -40,7 +40,8 @@ class PerUserStatsReport(ReportBase):
 
     def weekly_stats(self, df: pandas.DataFrame) -> go.Figure:
         df = df.set_index("timestamp")
-        df["activity_type"] = df["activity_type"].fillna("unspecified")
+        df["activity_type"] = df["activity_type"].fillna(NA_REPLACEMENT)
+
         grouped = df.groupby(["source_name", "activity_type"])
 
         fig = go.Figure()
