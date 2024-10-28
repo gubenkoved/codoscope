@@ -62,8 +62,9 @@ class PerUserStatsReport(ReportBase):
         fig.update_layout(
             barmode="stack",
             showlegend=True,  # ensure legend even for single series
-            margin=dict(
-                t=50,
+            # do not limit the hover label length
+            hoverlabel=dict(
+                namelength=-1,
             ),
         )
 
