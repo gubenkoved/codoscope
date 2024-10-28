@@ -68,13 +68,39 @@ def line_counts_stats(
         cumulative_df = cumulative_df.cumsum()
         fig.add_trace(
             go.Scatter(
-                name="cumulative lines count",
+                name="cumulative added",
+                x=cumulative_df.index,
+                y=cumulative_df["commit_added_lines"],
+                mode="lines",
+                line=dict(
+                    color="#107194",  # darker blue
+                    width=1.5,
+                ),
+            ),
+            secondary_y=True,
+        )
+        fig.add_trace(
+            go.Scatter(
+                name="cumulative removed",
+                x=cumulative_df.index,
+                y=cumulative_df["commit_removed_lines"],
+                mode="lines",
+                line=dict(
+                    color="#b33125",  # darker red
+                    width=1.5,
+                ),
+            ),
+            secondary_y=True,
+        )
+        fig.add_trace(
+            go.Scatter(
+                name="cumulative delta",
                 x=cumulative_df.index,
                 y=cumulative_df["lines_delta"],
                 mode="lines",
                 line=dict(
-                    color="#107194",  # darker blue
-                    width=2,
+                    color="#6f1fb5", # dark purple
+                    width=1.5,
                 ),
             ),
             secondary_y=True,
