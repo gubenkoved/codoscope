@@ -23,9 +23,7 @@ class PrReviewsReport(ReportBase):
         ensure_dir_for_path(out_path)
 
         reviews_df = datasets.reviews
-
-        reviews_df = reviews_df[reviews_df["is_self_review"] == False]
-
+        reviews_df = reviews_df[reviews_df["is_self_review"] == False].copy()
         # init missing review timestamp from the pr creation date itself just to
         # provide some reasonable time reference
         reviews_df['timestamp'] = reviews_df['timestamp'].fillna(reviews_df["bitbucker_pr_created_date"])

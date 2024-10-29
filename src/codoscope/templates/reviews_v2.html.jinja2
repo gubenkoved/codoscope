@@ -242,8 +242,6 @@
       }
     }
 
-    // tries to preserve the objects in the target array if matching found
-    // by the indentity function
     function smartUpdate(sourceArray, targetArray, identityFunc) {
       const sourceMap = new Map();
       const targetMap = new Map();
@@ -275,15 +273,31 @@
       "links": [],
     }
 
+    // tries to preserve the objects in the target array if matching found
+    // by the indentity function
+    const nodesPoolMap = new Map();
+    const linksPoolMap = new Map();
+
+    // never delets object from pool allowing force graph to maintain the state
+    function poolObjects(array, poolMap, identityFunc) {
+      let result = [];
+      array.forEach((item) => {
+        const identity = identityFunc(item);
+        if (poolMap.has(identity)) {
+          Object.assign(poolMap.get(identity), item);
+        } else {
+          poolMap.set(identity, item);
+        }
+        result.push(poolMap.get(identity));
+      });
+      return result;
+    }
+
     // maintains objects identity in the graph data, so that graph can change
     // w/o full redraw
     function updateGraphData(newGraphData) {
-      // converts graph data to maps and performs updates inside the graph data
-      // dropping elements which are no longer present
-
-      smartUpdate(newGraphData["nodes"], graphData["nodes"], x => x.id);
-      smartUpdate(newGraphData["links"], graphData["links"], x => x.id);
-
+      graphData["nodes"] = poolObjects(newGraphData["nodes"], nodesPoolMap, x => x.id);
+      graphData["links"] = poolObjects(newGraphData["links"], linksPoolMap, x => x.id);
       myGraph.graphData(graphData);
     }
 
