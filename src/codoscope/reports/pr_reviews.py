@@ -25,7 +25,6 @@ class PrReviewsReport(ReportBase):
         reviews_df = datasets.reviews
 
         reviews_df = reviews_df[reviews_df["is_self_review"] == False]
-        reviews_df = reviews_df[reviews_df["has_approved"] == True]
 
         # init missing review timestamp from the pr creation date itself just to
         # provide some reasonable time reference
@@ -40,6 +39,7 @@ class PrReviewsReport(ReportBase):
             reviewer = row["reviewer_user"]
             reviewee = row["reviewee_user"]
             timestamp = row["timestamp"]
+            has_approved = row["has_approved"]
 
             if reviewer in ignored_users or reviewee in ignored_users:
                 continue
@@ -49,6 +49,7 @@ class PrReviewsReport(ReportBase):
                     "reviewer": reviewer,
                     "reviewee": reviewee,
                     "timestamp": timestamp,
+                    "has_approved": has_approved,
                 }
             )
 

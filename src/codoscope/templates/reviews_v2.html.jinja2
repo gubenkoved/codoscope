@@ -26,11 +26,17 @@
       background: rgba(255, 255, 255, 0.5);
       padding: 6px;
     }
-    #controls input {
+    .control__setting {
+      display: flex;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+    #controls input[type="range"] {
       width: 100%;
     }
     .control__label {
       font-size: 10px;
+      min-width: 100px;
     }
   </style>
 </head>
@@ -55,6 +61,10 @@
         <span class="control__label">End date</span>
         <input type="range" min="0" max="100" value="100" class="slider" id="end-date-slider">
       </div>
+      <div class="control__setting">
+        <input type="checkbox" checked id="approvedOnlyCheckbox">
+        <span class="control__label">Approvals only</span>
+      </div>
     </div>
   </div>
 
@@ -62,15 +72,15 @@
     // TODO: use map based encoding to save space
     const data_raw = [
       {% for item in data_model -%}
-          ["{{item.reviewer}}", "{{item.reviewee}}", "{{item.timestamp}}"],
+          ["{{item.reviewer}}", "{{item.reviewee}}", "{{item.timestamp}}", {{ 'true' if item.has_approved else 'false' }}],
       {% endfor %}
     ];
 
     // post-load processing
     const data = [];
-    data_raw.forEach(([reviewer, reviewee, timestamp_str]) => {
+    data_raw.forEach(([reviewer, reviewee, timestamp_str, has_approved]) => {
       const timestamp = new Date(timestamp_str);
-      data.push({ reviewer, reviewee, timestamp });
+      data.push({ reviewer, reviewee, timestamp, has_approved });
     });
   </script>
 
@@ -127,6 +137,7 @@
       const linkSliderElement = document.getElementById("link-threshold-slider");
       const startDateSliderElement = document.getElementById("start-date-slider");
       const endDateSliderElement = document.getElementById("end-date-slider");
+      const approvedOnlyCheckboxElement = document.getElementById("approvedOnlyCheckbox");
 
     function interpolateDate(date1, date2, factor) {
       const time1 = date1.getTime();
@@ -165,13 +176,18 @@
       const startThreshold = interpolateDate(dateRange.min, dateRange.max, startThresholdFactor);
       const endThresholdFactor = parseFloat(endDateSliderElement.value) / parseFloat(endDateSliderElement.max);
       const endThreshold = interpolateDate(dateRange.min, dateRange.max, endThresholdFactor);
+      const approvedOnly = approvedOnlyCheckboxElement.checked;
 
       console.log(`date range: [${startThreshold}, ${endThreshold}]`);
 
-      data.forEach(({ reviewer, reviewee, timestamp }) => {
+      data.forEach(({ reviewer, reviewee, timestamp, has_approved }) => {
         const key = `${reviewer} :: ${reviewee}`;
 
         if (timestamp < startThreshold || timestamp > endThreshold) {
+          return;
+        }
+
+        if (approvedOnly && !has_approved) {
           return;
         }
 
@@ -279,21 +295,11 @@
       updateGraphData(filtered);
     }
 
-    nodeSliderElement.oninput = function (event) {
-      recompute();
-    }
-
-    linkSliderElement.oninput = function (event) {
-      recompute();
-    }
-
-    startDateSliderElement.oninput = function (event) {
-      recompute();
-    }
-
-    endDateSliderElement.oninput = function (event) {
-      recompute();
-    }
+    nodeSliderElement.oninput = (event) => recompute();
+    linkSliderElement.oninput = (event) => recompute();
+    startDateSliderElement.oninput = (event) => recompute();
+    endDateSliderElement.oninput = (event) => recompute();
+    approvedOnlyCheckboxElement.oninput = (event) => recompute();
 
     // handle initial state
     document.addEventListener('DOMContentLoaded', function () {
