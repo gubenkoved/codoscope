@@ -10,11 +10,38 @@
       overflow: hidden;
       /* prevent scrollbars */
     }
+    #controls {
+      width: 300px;
+      max-height: 100px;
+      position: fixed;
+      top: 10px;
+      right: 16px;
+      border: 1px dashed gray;
+      background: rgba(255, 255, 255, 0.5);
+      padding: 6px;
+    }
+    #controls input {
+      width: 100%;
+    }
+    .control__label {
+      font-size: 10px;
+    }
   </style>
 </head>
 
 <body>
   <div id="container"></div>
+  <div id="controls">
+    <div class="control__setting">
+      <span class="control__label">Node threshold</span>
+      <input type="range" min="1" max="1000" value="10" class="slider" id="node-threshold-slider">
+    </div>
+    <div class="control__setting">
+      <span class="control__label">Link threshold</span>
+      <input type="range" min="1" max="100" value="10" class="slider" id="link-threshold-slider">
+    </div>
+  </div>
+
   <script>
     const nodes = [
       {% for name, info in user_info_map.items() -%}
@@ -28,6 +55,7 @@
       {% endfor %}
     ];
   </script>
+
   <script>
     const container = document.getElementById("container");
     const myGraph = ForceGraph();
@@ -69,6 +97,54 @@
         "nodes": nodes,
         "links": links,
       });
+  </script>
+
+  <script>
+    function getFilteredGraphData(nodeCountThreshold, linkCountThreshold) {
+      console.log(`node threshold ${nodeCountThreshold} link threshold ${linkCountThreshold}`);
+
+      const filteredNodes = nodes.filter(node => {
+        return node.count >= nodeCountThreshold;
+      });
+
+      const filteredNodeIds = new Set(filteredNodes.map(node => node.id));
+
+      const filteredLinks = links.filter(link => {
+        return (
+          link.count >= linkCountThreshold &&
+          filteredNodeIds.has(link.source.id) &&
+          filteredNodeIds.has(link.target.id)
+        );
+      });
+
+      console.log(`nodes left: ${filteredNodes.length}, links ${filteredLinks.length}`);
+
+      return {
+        "nodes": filteredNodes,
+        "links": filteredLinks,
+      }
+    }
+
+    const nodeSliderElement = document.getElementById("node-threshold-slider");
+    const linkSliderElement = document.getElementById("link-threshold-slider");
+
+    function handleThresholdsChange() {
+      const nodeThresholdValue = parseFloat(nodeSliderElement.value);
+      const linkThresholdValue = parseFloat(linkSliderElement.value);
+      const graphData = getFilteredGraphData(nodeThresholdValue, linkThresholdValue);
+      myGraph.graphData(graphData);
+    }
+
+    nodeSliderElement.oninput = function (event) {
+      handleThresholdsChange();
+    }
+
+    linkSliderElement.oninput = function (event) {
+      handleThresholdsChange();
+    }
+
+    // handle initial state
+    document.onload += handleThresholdsChange;
   </script>
 </body>
 </html>

@@ -64,11 +64,6 @@ class PrReviewsReport(ReportBase):
 
         LOGGER.info("links count: %d", len(review_links))
 
-        threshold = read_optional(config, "threshold", 10)
-        review_links = [x for x in review_links if x["count"] >= threshold]
-
-        LOGGER.info("links count over threshold %d is %d", threshold, len(review_links))
-
         with open(out_path, "w") as out_file:
             rendered_text = render_jinja_template(
                 "reviews_v2.html.jinja2",
