@@ -5,15 +5,21 @@
   <title>{{title}}</title>
   <script src="https://unpkg.com/force-graph"></script>
   <style>
+    html, body, #container, #graph-container {
+      height: 100%;
+      width: 100%;
+    }
     body {
       margin: 0;
-      overflow: hidden;
       /* prevent scrollbars */
+      overflow: hidden;
+    }
+    #container {
+      position: relative;
     }
     #controls {
       width: 300px;
-      max-height: 100px;
-      position: fixed;
+      position: absolute;
       top: 10px;
       right: 16px;
       border: 1px dashed gray;
@@ -30,39 +36,48 @@
 </head>
 
 <body>
-  <div id="container"></div>
-  <div id="controls">
-    <div class="control__setting">
-      <span class="control__label">Node threshold</span>
-      <input type="range" min="1" max="1000" value="10" class="slider" id="node-threshold-slider">
-    </div>
-    <div class="control__setting">
-      <span class="control__label">Link threshold</span>
-      <input type="range" min="1" max="100" value="10" class="slider" id="link-threshold-slider">
+  <div id="container">
+    <div id="graph-container"></div>
+    <div id="controls">
+      <div class="control__setting">
+        <span class="control__label">Node threshold</span>
+        <input type="range" min="1" max="1000" value="10" class="slider" id="node-threshold-slider">
+      </div>
+      <div class="control__setting">
+        <span class="control__label">Link threshold</span>
+        <input type="range" min="1" max="100" value="10" class="slider" id="link-threshold-slider">
+      </div>
+      <div class="control__setting">
+        <span class="control__label">Start date</span>
+        <input type="range" min="0" max="100" value="0" class="slider" id="start-date-slider">
+      </div>
+      <div class="control__setting">
+        <span class="control__label">End date</span>
+        <input type="range" min="0" max="100" value="100" class="slider" id="end-date-slider">
+      </div>
     </div>
   </div>
 
   <script>
-    const nodes = [
-      {% for name, info in user_info_map.items() -%}
-          { id: "{{name}}", color: "{{info.color}}", count: {{info.count}} },
+    // TODO: use map based encoding to save space
+    const data_raw = [
+      {% for item in data_model -%}
+          ["{{item.reviewer}}", "{{item.reviewee}}", "{{item.timestamp}}"],
       {% endfor %}
     ];
 
-    const links = [
-      {% for link in review_links -%}
-          { source: "{{link.reviewer}}", target: "{{link.reviewee}}", count: {{link.count}} },
-      {% endfor %}
-    ];
+    // post-load processing
+    const data = [];
+    data_raw.forEach(([reviewer, reviewee, timestamp_str]) => {
+      const timestamp = new Date(timestamp_str);
+      data.push({ reviewer, reviewee, timestamp });
+    });
   </script>
 
   <script>
-    const container = document.getElementById("container");
+    const graphContainer = document.getElementById("graph-container");
     const myGraph = ForceGraph();
-    myGraph(container)
-      .nodeVal((node) => {
-        return node.size;
-      })
+    myGraph(graphContainer)
       .linkWidth((link) => {
         return Math.min(10, Math.max(0.5, Math.log(link.count, 2) - 2));
       })
@@ -72,7 +87,8 @@
       .linkDirectionalArrowRelPos(0.7)
       .nodeCanvasObject((node, ctx, globalScale) => {
         const label = node.id;
-        const fontSizeExtra = Math.log(node.count, 2);
+        const totalCount = node.review_given + node.review_received;
+        const fontSizeExtra = Math.log(totalCount, 2);
         const fontSize = (10 + fontSizeExtra) / globalScale;
         ctx.font = `${fontSize}px Sans-Serif`;
         const textWidth = ctx.measureText(label).width;
@@ -92,28 +108,113 @@
         ctx.fillStyle = color;
         const bckgDimensions = node.__bckgDimensions;
         bckgDimensions && ctx.fillRect(node.x - bckgDimensions[0] / 2, node.y - bckgDimensions[1] / 2, ...bckgDimensions);
-      })
-      .graphData({
-        "nodes": nodes,
-        "links": links,
       });
+
+    function handleResize() {
+      const clientWidth = graphContainer.clientWidth;
+      const clientHeight = graphContainer.clientHeight;
+
+      myGraph.width(clientWidth);
+      myGraph.height(clientHeight);
+    }
+
+    // handle resize
+    window.addEventListener('resize', handleResize);
   </script>
 
   <script>
+      const nodeSliderElement = document.getElementById("node-threshold-slider");
+      const linkSliderElement = document.getElementById("link-threshold-slider");
+      const startDateSliderElement = document.getElementById("start-date-slider");
+      const endDateSliderElement = document.getElementById("end-date-slider");
+
+    function interpolateDate(date1, date2, factor) {
+      const time1 = date1.getTime();
+      const time2 = date2.getTime();
+      const interpolatedTime = time1 + (time2 - time1) * factor;
+      return new Date(interpolatedTime);
+    }
+
+    function findMinMaxDates(data) {
+        if (!data || data.length === 0) {
+          return { min: null, max: null };
+        }
+
+        let minDate = new Date(data[0].timestamp);
+        let maxDate = new Date(data[0].timestamp);
+
+        for (let i = 1; i < data.length; i++) {
+          const currentDate = new Date(data[i].timestamp);
+          if (currentDate < minDate) {
+            minDate = currentDate;
+          }
+          if (currentDate > maxDate) {
+            maxDate = currentDate;
+          }
+        }
+
+        return { min: minDate, max: maxDate };
+      }
+
+    function aggregateReviews() {
+      const linkMap = new Map();
+      const nodesMap = new Map();
+
+      const dateRange = findMinMaxDates(data);
+      const startThresholdFactor = parseFloat(startDateSliderElement.value) / parseFloat(startDateSliderElement.max);
+      const startThreshold = interpolateDate(dateRange.min, dateRange.max, startThresholdFactor);
+      const endThresholdFactor = parseFloat(endDateSliderElement.value) / parseFloat(endDateSliderElement.max);
+      const endThreshold = interpolateDate(dateRange.min, dateRange.max, endThresholdFactor);
+
+      console.log(`date range: [${startThreshold}, ${endThreshold}]`);
+
+      data.forEach(({ reviewer, reviewee, timestamp }) => {
+        const key = `${reviewer} :: ${reviewee}`;
+
+        if (timestamp < startThreshold || timestamp > endThreshold) {
+          return;
+        }
+
+        if (!linkMap.has(key)) {
+          linkMap.set(key, { id: key, source: reviewer, target: reviewee, count: 0 });
+        }
+
+        linkMap.get(key).count += 1;
+
+        if (!nodesMap.has(reviewer)) {
+          nodesMap.set(reviewer, { id: reviewer, review_given: 0, review_received: 0, color: "#3777de" });
+        }
+        if (!nodesMap.has(reviewee)) {
+          nodesMap.set(reviewee, { id: reviewee, review_given: 0, review_received: 0, color: "#3777de" });
+        }
+
+        nodesMap.get(reviewer).review_given += 1;
+        nodesMap.get(reviewee).review_received += 1;
+      });
+
+      return {
+        "links": Array.from(linkMap.values()),
+        "nodes": Array.from(nodesMap.values()),
+      }
+    }
+
     function getFilteredGraphData(nodeCountThreshold, linkCountThreshold) {
       console.log(`node threshold ${nodeCountThreshold} link threshold ${linkCountThreshold}`);
 
-      const filteredNodes = nodes.filter(node => {
-        return node.count >= nodeCountThreshold;
+      // compose nodes and edges lists
+      const aggregated = aggregateReviews();
+
+      const filteredNodes = aggregated["nodes"].filter(node => {
+        return (node.review_given + node.review_received) >= nodeCountThreshold;
       });
 
       const filteredNodeIds = new Set(filteredNodes.map(node => node.id));
 
-      const filteredLinks = links.filter(link => {
+      const filteredLinks = aggregated["links"].filter(link => {
         return (
           link.count >= linkCountThreshold &&
-          filteredNodeIds.has(link.source.id) &&
-          filteredNodeIds.has(link.target.id)
+          filteredNodeIds.has(link.source) &&
+          filteredNodeIds.has(link.target)
         );
       });
 
@@ -125,26 +226,79 @@
       }
     }
 
-    const nodeSliderElement = document.getElementById("node-threshold-slider");
-    const linkSliderElement = document.getElementById("link-threshold-slider");
+    // tries to preserve the objects in the target array if matching found
+    // by the indentity function
+    function smartUpdate(sourceArray, targetArray, identityFunc) {
+      const sourceMap = new Map();
+      const targetMap = new Map();
 
-    function handleThresholdsChange() {
-      const nodeThresholdValue = parseFloat(nodeSliderElement.value);
-      const linkThresholdValue = parseFloat(linkSliderElement.value);
-      const graphData = getFilteredGraphData(nodeThresholdValue, linkThresholdValue);
+      sourceArray.forEach(item => sourceMap.set(identityFunc(item), item));
+      targetArray.forEach(item => targetMap.set(identityFunc(item), item));
+
+      // drop ones which no longer present
+      for (let i = targetArray.length - 1; i >= 0; i--) {
+        const identity = identityFunc(targetArray[i]);
+        if (!sourceMap.has(identity)) {
+          targetArray.splice(i, 1);
+        }
+      }
+
+      // now iterate the source and either update the existing matching ones or create new
+      sourceArray.forEach((item) => {
+        const identity = identityFunc(item);
+        if (targetMap.has(identity)) {
+          Object.assign(targetMap.get(identity), sourceMap.get(identity));
+        } else {
+          targetArray.push(item);
+        }
+      })
+    }
+
+    const graphData = {
+      "nodes": [],
+      "links": [],
+    }
+
+    // maintains objects identity in the graph data, so that graph can change
+    // w/o full redraw
+    function updateGraphData(newGraphData) {
+      // converts graph data to maps and performs updates inside the graph data
+      // dropping elements which are no longer present
+
+      smartUpdate(newGraphData["nodes"], graphData["nodes"], x => x.id);
+      smartUpdate(newGraphData["links"], graphData["links"], x => x.id);
+
       myGraph.graphData(graphData);
     }
 
+    function recompute() {
+      console.log('recomputing...');
+      const nodeThresholdValue = parseFloat(nodeSliderElement.value);
+      const linkThresholdValue = parseFloat(linkSliderElement.value);
+      const filtered = getFilteredGraphData(nodeThresholdValue, linkThresholdValue);
+      updateGraphData(filtered);
+    }
+
     nodeSliderElement.oninput = function (event) {
-      handleThresholdsChange();
+      recompute();
     }
 
     linkSliderElement.oninput = function (event) {
-      handleThresholdsChange();
+      recompute();
+    }
+
+    startDateSliderElement.oninput = function (event) {
+      recompute();
+    }
+
+    endDateSliderElement.oninput = function (event) {
+      recompute();
     }
 
     // handle initial state
-    document.onload += handleThresholdsChange;
+    document.addEventListener('DOMContentLoaded', function () {
+      recompute()
+    });
   </script>
 </body>
 </html>

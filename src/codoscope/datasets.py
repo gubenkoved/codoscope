@@ -201,6 +201,7 @@ def extract_reviews(state: StateModel) -> pandas.DataFrame:
                                     "bitbucket_pr_id": pr.id,
                                     "bitbucket_project_name": project_name,
                                     "bitbucket_repo_name": repo_name,
+                                    "bitbucker_pr_created_date": pr.created_on,
                                 }
                             )
 

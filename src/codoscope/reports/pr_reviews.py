@@ -25,52 +25,41 @@ class PrReviewsReport(ReportBase):
         reviews_df = datasets.reviews
 
         reviews_df = reviews_df[reviews_df["is_self_review"] == False]
-        reviews_df = reviews_df[reviews_df["has_approved"] == False]
+        reviews_df = reviews_df[reviews_df["has_approved"] == True]
 
-        grouped = (
-            reviews_df.groupby(["reviewer_user", "reviewee_user"]).size().reset_index(name="count")
-        )
-        grouped.columns = ["reviewer_user", "reviewee_user", "count"]
-
-        review_links = []
-        user_info_map = collections.defaultdict(
-            lambda: {
-                "count": 0,
-                "color": "#3777de",
-            }
-        )
+        # init missing review timestamp from the pr creation date itself just to
+        # provide some reasonable time reference
+        reviews_df['timestamp'] = reviews_df['timestamp'].fillna(reviews_df["bitbucker_pr_created_date"])
 
         ignored_users = read_optional(config, "ignored-users", [])
 
         LOGGER.info("users ignored: %s", ignored_users)
 
-        for _, row in grouped.iterrows():
+        reviews_model = []
+        for _, row in reviews_df.iterrows():
             reviewer = row["reviewer_user"]
             reviewee = row["reviewee_user"]
-            count = row["count"]
+            timestamp = row["timestamp"]
 
             if reviewer in ignored_users or reviewee in ignored_users:
                 continue
 
-            user_info_map[reviewer]["count"] += count
-            _ = user_info_map[reviewee]
-            review_links.append(
+            reviews_model.append(
                 {
                     "reviewer": reviewer,
                     "reviewee": reviewee,
-                    "count": count,
+                    "timestamp": timestamp,
                 }
             )
 
-        LOGGER.info("links count: %d", len(review_links))
+        LOGGER.info("items count: %d", len(reviews_model))
 
         with open(out_path, "w") as out_file:
             rendered_text = render_jinja_template(
                 "reviews_v2.html.jinja2",
                 context={
                     "title": "codoscope :: reviewers",
-                    "review_links": review_links,
-                    "user_info_map": user_info_map,
+                    "data_model": reviews_model,
                 },
             )
             out_file.write(rendered_text)
