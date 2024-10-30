@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>{{title}}</title>
   <script src="https://unpkg.com/force-graph"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -80,6 +81,9 @@
       </div>
       <div class="control__setting">
         <input type="text" placeholder="find" id="findTextbox">
+      </div>
+      <div class="control__setting">
+        <button id="spanningForestButton">Spanning forest</button>
       </div>
     </div>
   </div>
@@ -210,6 +214,7 @@
     const endDateSliderElement = document.getElementById("end-date-slider");
     const approvedOnlyCheckboxElement = document.getElementById("approvedOnlyCheckbox");
     const findTextboxElement = document.getElementById("findTextbox");
+    const spanningForestButtonElement = document.getElementById("spanningForestButton");
 
     function interpolateDate(date1, date2, factor) {
       const time1 = date1.getTime();
@@ -379,6 +384,67 @@
         }
       });
     }
+
+    function showSpanningForest() {
+      nodeSliderElement.value = nodeSliderElement.min;
+      linkSliderElement.value = linkSliderElement.min;
+
+      let graphData = aggregateReviews();
+
+      // use Kruskal algorithm to find spaning forest
+
+      // disjoint set house-keeping
+      const parentMap = new Map();
+
+      // init parents map
+      graphData.nodes.forEach((node) => {
+        parentMap.set(node.id, node.id);
+      })
+
+      function ultimateParent(node) {
+        parent = parentMap.get(node);
+        while (parentMap.get(parent) != parent) {
+          parent = parentMap.get(parent);
+        }
+        parentMap.set(node, parent);
+        return parent;
+      }
+
+      function union(node1, node2) {
+        node1Parent = ultimateParent(node1);
+        node2Parent = ultimateParent(node2);
+        parentMap.set(node2Parent, node1Parent);
+      }
+
+      const spanningTreeLinks = [];
+
+      // sort by link weight descending
+      const sortedLinks = graphData.links.sort((a, b) => b.count - a.count);
+
+      sortedLinks.forEach((link) => {
+        const sourceParent = ultimateParent(link.source.id);
+        const targetParent = ultimateParent(link.target.id);
+        if (sourceParent != targetParent) {
+          spanningTreeLinks.push(link);
+          union(sourceParent, targetParent);
+        }
+      });
+
+      // color the spanning links differently
+      spanningTreeLinks.forEach((link) => {
+        link.color = defaultColor;
+      });
+
+      graphData = {
+        nodes: graphData.nodes,
+        links: spanningTreeLinks,
+      }
+
+      graphData = poolGraphData(graphData);
+      myGraph.graphData(graphData);
+    }
+
+    spanningForestButtonElement.onclick = (event) => showSpanningForest();
 
     function recompute() {
       console.log('recomputing...');
