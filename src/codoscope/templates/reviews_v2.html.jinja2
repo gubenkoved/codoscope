@@ -109,6 +109,7 @@
     const myGraph = ForceGraph();
 
     let canvas = null;
+    let scale = 1.0;
 
     function ensureCanvas() {
       if (!canvas) {
@@ -122,6 +123,12 @@
       ensureCanvas();
       return Math.sqrt(1.0 / canvas.__zoom.k);
     }
+
+    function updateCurrentScale() {
+      scale = estimateScale();
+      requestAnimationFrame(updateCurrentScale);
+    }
+    requestAnimationFrame(updateCurrentScale);
 
     myGraph(graphContainer)
       .linkWidth((link) => {
@@ -141,7 +148,7 @@
       .linkDirectionalParticleWidth((link) => {
         // make particle smaller when zooming in maintaining relative size
         // same as the line itself
-        return estimateScale() * 6.0;
+        return scale * 6.0;
       })
       .nodeCanvasObject((node, ctx, globalScale) => {
         const label = node.id;
