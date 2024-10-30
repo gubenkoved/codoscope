@@ -103,12 +103,20 @@
   <script>
     const defaultColor = "#3777de";
     const highlightColor = "#e25548";
+    const accentColor = "#7a18d6";
 
     const graphContainer = document.getElementById("graph-container");
     const myGraph = ForceGraph();
     myGraph(graphContainer)
       .linkWidth((link) => {
         return Math.min(10, Math.max(0.5, Math.log(link.count, 2) - 2));
+      })
+      .linkColor((link) => {
+        if (link.isAccented) {
+          return accentColor;
+        } else {
+          return link.color;
+        }
       })
       .linkDirectionalArrowLength((link) => {
         return Math.min(10, Math.max(0.5, Math.log(link.count, 2) - 2));
@@ -120,10 +128,12 @@
         const fontSizeExtra = Math.log(totalCount, 2);
         const fontSize = (10 + fontSizeExtra) / globalScale;
 
-        if (!node.isHighlighted) {
-          ctx.font = `${fontSize}px Ubuntu`;
-        } else {
+        if (node.isHighlighted) {
           ctx.font = `bold ${fontSize}px Ubuntu`;
+        } else if (node.isAccented) {
+          ctx.font = `bold ${fontSize}px Ubuntu`;
+        } else {
+          ctx.font = `${fontSize}px Ubuntu`;
         }
 
         const textWidth = ctx.measureText(label).width;
@@ -135,10 +145,12 @@
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        if (!node.isHighlighted) {
-          ctx.fillStyle = node.color;
-        } else {
+        if (node.isHighlighted) {
           ctx.fillStyle = highlightColor;
+        } else if (node.isAccented) {
+          ctx.fillStyle = accentColor;
+        } else {
+          ctx.fillStyle = node.color;
         }
 
         ctx.fillText(label, node.x, node.y);
@@ -363,6 +375,61 @@
     // handle initial state
     document.addEventListener('DOMContentLoaded', function () {
       recompute()
+    });
+  </script>
+  <script>
+    let isDragStartHandled = false;
+
+    function getNeighbors(nodeId) {
+      let neighborsIds = new Set();
+      let linkIds = new Set();
+      graphData.links.forEach((link) => {
+        if (link.source.id == nodeId) {
+          neighborsIds.add(link.target.id);
+          linkIds.add(link.id);
+        }
+        if (link.target.id == nodeId) {
+          neighborsIds.add(link.source.id);
+          linkIds.add(link.id);
+        }
+      });
+      return {
+        nodes: neighborsIds,
+        links: linkIds,
+      }
+    }
+
+    myGraph.onNodeDrag((node, event) => {
+      if (isDragStartHandled) {
+        return;
+      }
+      isDragStartHandled = true;
+
+      node.isAccented = true;
+
+      const neighbors = getNeighbors(node.id);
+
+      graphData.nodes.forEach((node) => {
+        if (neighbors.nodes.has(node.id)) {
+          node.isAccented = true;
+        }
+      });
+
+      graphData.links.forEach((link) => {
+        if (neighbors.links.has(link.id)) {
+          link.isAccented = true;
+        }
+      });
+    });
+
+    myGraph.onNodeDragEnd((node, event) => {
+      isDragStartHandled = false;
+      graphData.nodes.forEach((node) => {
+        node.isAccented = false;
+      });
+      graphData.links.forEach((link) => {
+        link.isAccented = false;
+      });
     });
   </script>
 </body>
