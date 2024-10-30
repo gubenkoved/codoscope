@@ -225,7 +225,7 @@
       console.log(`date range: [${startThreshold}, ${endThreshold}]`);
 
       data.forEach(({ reviewer, reviewee, timestamp, has_approved }) => {
-        const key = `${reviewer} :: ${reviewee}`;
+        const linkId = `${reviewer} :: ${reviewee}`;
 
         if (timestamp < startThreshold || timestamp > endThreshold) {
           return;
@@ -235,94 +235,76 @@
           return;
         }
 
-        if (!linkMap.has(key)) {
-          linkMap.set(key, { id: key, source: reviewer, target: reviewee, count: 0 });
-        }
-
-        linkMap.get(key).count += 1;
-
         if (!nodesMap.has(reviewer)) {
-          nodesMap.set(reviewer, { id: reviewer, review_given: 0, review_received: 0, color: defaultColor });
+          nodesMap.set(reviewer, {
+            id: reviewer,
+            review_given: 0,
+            review_received: 0,
+            color: defaultColor,
+          });
         }
+
         if (!nodesMap.has(reviewee)) {
-          nodesMap.set(reviewee, { id: reviewee, review_given: 0, review_received: 0, color: defaultColor });
+          nodesMap.set(reviewee, {
+            id: reviewee,
+            review_given: 0,
+            review_received: 0,
+            color: defaultColor,
+          });
         }
 
         nodesMap.get(reviewer).review_given += 1;
         nodesMap.get(reviewee).review_received += 1;
+
+        if (!linkMap.has(linkId)) {
+          linkMap.set(linkId, {
+            id: linkId,
+            source: nodesMap.get(reviewer),
+            target: nodesMap.get(reviewee),
+            count: 0,
+          });
+        }
+
+        linkMap.get(linkId).count += 1;
       });
 
       return {
-        "links": Array.from(linkMap.values()),
-        "nodes": Array.from(nodesMap.values()),
+        links: Array.from(linkMap.values()),
+        nodes: Array.from(nodesMap.values()),
       }
     }
 
-    function getFilteredGraphData(nodeCountThreshold, linkCountThreshold) {
+    function filterData(nodeCountThreshold, linkCountThreshold) {
       console.log(`node threshold ${nodeCountThreshold} link threshold ${linkCountThreshold}`);
 
       // compose nodes and edges lists
       const aggregated = aggregateReviews();
 
-      const filteredNodes = aggregated["nodes"].filter(node => {
+      const filteredNodes = aggregated.nodes.filter(node => {
         return (node.review_given + node.review_received) >= nodeCountThreshold;
       });
 
       const filteredNodeIds = new Set(filteredNodes.map(node => node.id));
 
-      const filteredLinks = aggregated["links"].filter(link => {
+      // make sure we only leave links which point to existing nodes
+      const filteredLinks = aggregated.links.filter(link => {
         return (
           link.count >= linkCountThreshold &&
-          filteredNodeIds.has(link.source) &&
-          filteredNodeIds.has(link.target)
+          filteredNodeIds.has(link.source.id) &&
+          filteredNodeIds.has(link.target.id)
         );
       });
 
       console.log(`nodes left: ${filteredNodes.length}, links ${filteredLinks.length}`);
 
       return {
-        "nodes": filteredNodes,
-        "links": filteredLinks,
+        nodes: filteredNodes,
+        links: filteredLinks,
       }
     }
 
-    function smartUpdate(sourceArray, targetArray, identityFunc) {
-      const sourceMap = new Map();
-      const targetMap = new Map();
-
-      sourceArray.forEach(item => sourceMap.set(identityFunc(item), item));
-      targetArray.forEach(item => targetMap.set(identityFunc(item), item));
-
-      // drop ones which no longer present
-      for (let i = targetArray.length - 1; i >= 0; i--) {
-        const identity = identityFunc(targetArray[i]);
-        if (!sourceMap.has(identity)) {
-          targetArray.splice(i, 1);
-        }
-      }
-
-      // now iterate the source and either update the existing matching ones or create new
-      sourceArray.forEach((item) => {
-        const identity = identityFunc(item);
-        if (targetMap.has(identity)) {
-          Object.assign(targetMap.get(identity), sourceMap.get(identity));
-        } else {
-          targetArray.push(item);
-        }
-      })
-    }
-
-    const graphData = {
-      "nodes": [],
-      "links": [],
-    }
-
-    // tries to preserve the objects in the target array if matching found
-    // by the indentity function
-    const nodesPoolMap = new Map();
-    const linksPoolMap = new Map();
-
-    // never delets object from pool allowing force graph to maintain the state
+    // never delets an object from the pool allowing force graph to
+    // maintain its state and redraw nicely
     function poolObjects(array, poolMap, identityFunc) {
       let result = [];
       array.forEach((item) => {
@@ -339,15 +321,29 @@
 
     // maintains objects identity in the graph data, so that graph can change
     // w/o full redraw
-    function updateGraphData(newGraphData) {
-      graphData["nodes"] = poolObjects(newGraphData["nodes"], nodesPoolMap, x => x.id);
-      graphData["links"] = poolObjects(newGraphData["links"], linksPoolMap, x => x.id);
-      myGraph.graphData(graphData);
+    const nodesPoolMap = new Map();
+
+    function poolGraphData(graphData) {
+      const pooledNodes = poolObjects(graphData.nodes, nodesPoolMap, x => x.id);
+
+      // replace references inside the links to point to pool objects
+      const remappedLinks = [];
+      graphData.links.forEach((link) => {
+        let linkClone = structuredClone(link);
+        linkClone.source = nodesPoolMap.get(linkClone.source.id);
+        linkClone.target = nodesPoolMap.get(linkClone.target.id);
+        remappedLinks.push(linkClone);
+      });
+
+      return {
+        nodes: pooledNodes,
+        links: remappedLinks,
+      };
     }
 
     function handleSearch(graphData) {
       const searchText = findTextboxElement.value.toLowerCase();
-      graphData["nodes"].forEach((node) => {
+      graphData.nodes.forEach((node) => {
         if (searchText && node.id.toLowerCase().includes(searchText)) {
           node.isHighlighted = true;
         } else {
@@ -360,22 +356,22 @@
       console.log('recomputing...');
       const nodeThresholdValue = parseFloat(nodeSliderElement.value);
       const linkThresholdValue = parseFloat(linkSliderElement.value);
-      const filtered = getFilteredGraphData(nodeThresholdValue, linkThresholdValue);
-      handleSearch(filtered);
-      updateGraphData(filtered);
+      let graphData = filterData(nodeThresholdValue, linkThresholdValue);
+      handleSearch(graphData);
+      graphData = poolGraphData(graphData);
+      myGraph.graphData(graphData);
     }
 
-    nodeSliderElement.onchange = (event) => recompute();
-    linkSliderElement.onchange = (event) => recompute();
-    startDateSliderElement.onchange = (event) => recompute();
-    endDateSliderElement.onchange = (event) => recompute();
+    // input handling event handlers
+    nodeSliderElement.oninput = (event) => recompute();
+    linkSliderElement.oninput = (event) => recompute();
+    startDateSliderElement.oninput = (event) => recompute();
+    endDateSliderElement.oninput = (event) => recompute();
     approvedOnlyCheckboxElement.onchange = (event) => recompute();
     findTextboxElement.oninput = (event) => recompute();
 
     // handle initial state
-    document.addEventListener('DOMContentLoaded', function () {
-      recompute()
-    });
+    document.addEventListener('DOMContentLoaded', () => recompute());
   </script>
   <script>
     let isDragStartHandled = false;
@@ -383,6 +379,7 @@
     function getNeighbors(nodeId) {
       let neighborsIds = new Set();
       let linkIds = new Set();
+      const graphData = myGraph.graphData();
       graphData.links.forEach((link) => {
         if (link.source.id == nodeId) {
           neighborsIds.add(link.target.id);
@@ -408,6 +405,7 @@
       node.isAccented = true;
 
       const neighbors = getNeighbors(node.id);
+      const graphData = myGraph.graphData();
 
       graphData.nodes.forEach((node) => {
         if (neighbors.nodes.has(node.id)) {
@@ -425,6 +423,7 @@
 
     myGraph.onNodeDragEnd((node, event) => {
       isDragStartHandled = false;
+      const graphData = myGraph.graphData();
       graphData.nodes.forEach((node) => {
         node.isAccented = false;
       });
