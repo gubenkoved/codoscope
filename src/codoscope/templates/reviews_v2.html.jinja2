@@ -107,6 +107,22 @@
 
     const graphContainer = document.getElementById("graph-container");
     const myGraph = ForceGraph();
+
+    let canvas = null;
+
+    function ensureCanvas() {
+      if (!canvas) {
+        canvas = document.querySelector(`#graph-container canvas`);
+      }
+    }
+
+    function estimateScale() {
+      // scale = myGraph.screen2GraphCoords(1, 0).x - myGraph.screen2GraphCoords(0, 0).x;
+      // return Math.sqrt(scale);
+      ensureCanvas();
+      return Math.sqrt(1.0 / canvas.__zoom.k);
+    }
+
     myGraph(graphContainer)
       .linkWidth((link) => {
         return Math.min(10, Math.max(0.5, Math.log(link.count, 2) - 2));
@@ -122,6 +138,11 @@
         return Math.min(10, Math.max(0.5, Math.log(link.count, 2) - 2));
       })
       .linkDirectionalArrowRelPos(0.7)
+      .linkDirectionalParticleWidth((link) => {
+        // make particle smaller when zooming in maintaining relative size
+        // same as the line itself
+        return estimateScale() * 6.0;
+      })
       .nodeCanvasObject((node, ctx, globalScale) => {
         const label = node.id;
         const totalCount = node.review_given + node.review_received;
@@ -362,13 +383,25 @@
       myGraph.graphData(graphData);
     }
 
+    function debounce(func, delay) {
+      let timeoutId;
+      return function (...args) {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          func.apply(this, args);
+        }, delay);
+      };
+    }
+
+    const debouncedRecompute = debounce(recompute, 100);
+
     // input handling event handlers
-    nodeSliderElement.oninput = (event) => recompute();
-    linkSliderElement.oninput = (event) => recompute();
-    startDateSliderElement.oninput = (event) => recompute();
-    endDateSliderElement.oninput = (event) => recompute();
-    approvedOnlyCheckboxElement.onchange = (event) => recompute();
-    findTextboxElement.oninput = (event) => recompute();
+    nodeSliderElement.oninput = (event) => debouncedRecompute();
+    linkSliderElement.oninput = (event) => debouncedRecompute();
+    startDateSliderElement.oninput = (event) => debouncedRecompute();
+    endDateSliderElement.oninput = (event) => debouncedRecompute();
+    approvedOnlyCheckboxElement.onchange = (event) => debouncedRecompute();
+    findTextboxElement.oninput = (event) => debouncedRecompute();
 
     // handle initial state
     document.addEventListener('DOMContentLoaded', () => recompute());
