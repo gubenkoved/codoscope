@@ -418,6 +418,7 @@
       graphData.links.forEach((link) => {
         if (neighbors.links.has(link.id)) {
           link.isAccented = true;
+          myGraph.emitParticle(link);
         }
       });
     });
