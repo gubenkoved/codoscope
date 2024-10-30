@@ -4,6 +4,14 @@
   <meta charset="UTF-8">
   <title>{{title}}</title>
   <script src="https://unpkg.com/force-graph"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap"
+    rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400;1,700&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap"
+    rel="stylesheet">
   <style>
     html, body, #container, #graph-container {
       height: 100%;
@@ -13,6 +21,7 @@
       margin: 0;
       /* prevent scrollbars */
       overflow: hidden;
+      font-family: "Ubuntu";
     }
     #container {
       position: relative;
@@ -33,6 +42,10 @@
     }
     #controls input[type="range"] {
       width: 100%;
+    }
+    #controls input[type="text"] {
+      width: 100%;
+      font-family: "Ubuntu";
     }
     .control__label {
       font-size: 10px;
@@ -65,6 +78,9 @@
         <input type="checkbox" checked id="approvedOnlyCheckbox">
         <span class="control__label">Approvals only</span>
       </div>
+      <div class="control__setting">
+        <input type="text" placeholder="find" id="findTextbox">
+      </div>
     </div>
   </div>
 
@@ -85,6 +101,9 @@
   </script>
 
   <script>
+    const defaultColor = "#3777de";
+    const highlightColor = "#e25548";
+
     const graphContainer = document.getElementById("graph-container");
     const myGraph = ForceGraph();
     myGraph(graphContainer)
@@ -100,7 +119,13 @@
         const totalCount = node.review_given + node.review_received;
         const fontSizeExtra = Math.log(totalCount, 2);
         const fontSize = (10 + fontSizeExtra) / globalScale;
-        ctx.font = `${fontSize}px Sans-Serif`;
+
+        if (!node.isHighlighted) {
+          ctx.font = `${fontSize}px Ubuntu`;
+        } else {
+          ctx.font = `bold ${fontSize}px Ubuntu`;
+        }
+
         const textWidth = ctx.measureText(label).width;
         const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.2); // some padding
 
@@ -109,7 +134,13 @@
 
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = node.color;
+
+        if (!node.isHighlighted) {
+          ctx.fillStyle = node.color;
+        } else {
+          ctx.fillStyle = highlightColor;
+        }
+
         ctx.fillText(label, node.x, node.y);
 
         node.__bckgDimensions = bckgDimensions; // to re-use in nodePointerAreaPaint
@@ -133,11 +164,12 @@
   </script>
 
   <script>
-      const nodeSliderElement = document.getElementById("node-threshold-slider");
-      const linkSliderElement = document.getElementById("link-threshold-slider");
-      const startDateSliderElement = document.getElementById("start-date-slider");
-      const endDateSliderElement = document.getElementById("end-date-slider");
-      const approvedOnlyCheckboxElement = document.getElementById("approvedOnlyCheckbox");
+    const nodeSliderElement = document.getElementById("node-threshold-slider");
+    const linkSliderElement = document.getElementById("link-threshold-slider");
+    const startDateSliderElement = document.getElementById("start-date-slider");
+    const endDateSliderElement = document.getElementById("end-date-slider");
+    const approvedOnlyCheckboxElement = document.getElementById("approvedOnlyCheckbox");
+    const findTextboxElement = document.getElementById("findTextbox");
 
     function interpolateDate(date1, date2, factor) {
       const time1 = date1.getTime();
@@ -198,10 +230,10 @@
         linkMap.get(key).count += 1;
 
         if (!nodesMap.has(reviewer)) {
-          nodesMap.set(reviewer, { id: reviewer, review_given: 0, review_received: 0, color: "#3777de" });
+          nodesMap.set(reviewer, { id: reviewer, review_given: 0, review_received: 0, color: defaultColor });
         }
         if (!nodesMap.has(reviewee)) {
-          nodesMap.set(reviewee, { id: reviewee, review_given: 0, review_received: 0, color: "#3777de" });
+          nodesMap.set(reviewee, { id: reviewee, review_given: 0, review_received: 0, color: defaultColor });
         }
 
         nodesMap.get(reviewer).review_given += 1;
@@ -301,11 +333,23 @@
       myGraph.graphData(graphData);
     }
 
+    function handleSearch(graphData) {
+      const searchText = findTextboxElement.value.toLowerCase();
+      graphData["nodes"].forEach((node) => {
+        if (searchText && node.id.toLowerCase().includes(searchText)) {
+          node.isHighlighted = true;
+        } else {
+          node.isHighlighted = false;
+        }
+      });
+    }
+
     function recompute() {
       console.log('recomputing...');
       const nodeThresholdValue = parseFloat(nodeSliderElement.value);
       const linkThresholdValue = parseFloat(linkSliderElement.value);
       const filtered = getFilteredGraphData(nodeThresholdValue, linkThresholdValue);
+      handleSearch(filtered);
       updateGraphData(filtered);
     }
 
@@ -314,6 +358,7 @@
     startDateSliderElement.oninput = (event) => recompute();
     endDateSliderElement.oninput = (event) => recompute();
     approvedOnlyCheckboxElement.oninput = (event) => recompute();
+    findTextboxElement.oninput = (event) => recompute();
 
     // handle initial state
     document.addEventListener('DOMContentLoaded', function () {
