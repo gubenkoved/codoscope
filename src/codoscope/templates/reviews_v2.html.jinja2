@@ -365,11 +365,11 @@
       updateGraphData(filtered);
     }
 
-    nodeSliderElement.oninput = (event) => recompute();
-    linkSliderElement.oninput = (event) => recompute();
-    startDateSliderElement.oninput = (event) => recompute();
-    endDateSliderElement.oninput = (event) => recompute();
-    approvedOnlyCheckboxElement.oninput = (event) => recompute();
+    nodeSliderElement.onchange = (event) => recompute();
+    linkSliderElement.onchange = (event) => recompute();
+    startDateSliderElement.onchange = (event) => recompute();
+    endDateSliderElement.onchange = (event) => recompute();
+    approvedOnlyCheckboxElement.onchange = (event) => recompute();
     findTextboxElement.oninput = (event) => recompute();
 
     // handle initial state
