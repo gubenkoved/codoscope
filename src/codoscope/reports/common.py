@@ -4,6 +4,7 @@ import typing
 from datetime import datetime
 
 import plotly.graph_objects as go
+import plotly.colors
 import tzlocal
 
 from codoscope.common import render_jinja_template
@@ -38,6 +39,8 @@ class ReportBase(abc.ABC):
 # TODO: move to separate plotly related module to better organize things
 def setup_default_layout(fig: go.Figure, title: str | None = None) -> None:
     fig.update_layout(
+        # TODO: make color scheme customizable by some config section
+        # colorway=plotly.colors.qualitative.Prism,
         title=title,
         title_font_family="Ubuntu",
         # title_font_variant='small-caps',
