@@ -375,13 +375,16 @@
 
     function handleSearch(graphData) {
       const searchText = findTextboxElement.value.toLowerCase();
+      const matchingNodes = [];
       graphData.nodes.forEach((node) => {
         if (searchText && node.id.toLowerCase().includes(searchText)) {
           node.isHighlighted = true;
+          matchingNodes.push(node);
         } else {
           node.isHighlighted = false;
         }
       });
+      return matchingNodes;
     }
 
     // implements Kruskal algorithm to find spanning forest
@@ -462,25 +465,39 @@
       graphData = filterNodes(graphData, nodeThresholdValue);
 
       if (spanningForestCheckboxElement.checked) {
-        spanningTreeData = findSpanningForest(graphData);
+        const spanningTreeData = findSpanningForest(graphData);
 
         spanningTreeData.links.forEach((link) => {
           link.color = defaultColor;
         });
 
-        filteredTreeData = filterLinks(graphData, linkThresholdValue);
+        const filteredTreeData = filterLinks(graphData, linkThresholdValue);
         graphData = mergeLinks(spanningTreeData, filteredTreeData);
       } else {
         graphData = filterLinks(graphData, linkThresholdValue);
       }
 
-      handleSearch(graphData);
+      const matchingNodesMap = arrayToMap(handleSearch(graphData));
 
       graphData = poolGraphData(graphData);
 
       console.log(`nodes: ${graphData.nodes.length}, links: ${graphData.links.length}`);
 
       myGraph.graphData(graphData);
+
+      // zoom to the matching node(s)
+      const zoomAnimationLenMs = 1000;
+      if (matchingNodesMap.size === 1) {
+        const matchingNodeId = matchingNodesMap.keys().next().value;
+        myGraph.graphData().nodes.forEach((node) => {
+          if (node.id === matchingNodeId) {
+            myGraph.centerAt(node.x, node.y, zoomAnimationLenMs);
+          }
+        });
+      }
+      // else if (matchingNodesMap.size > 1) {
+      //  myGraph.zoomToFit(zoomAnimationLenMs, 10, (node) => matchingNodesMap.has(node.id));
+      // }
     }
 
     function debounce(func, delay) {
