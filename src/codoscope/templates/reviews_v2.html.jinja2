@@ -78,12 +78,11 @@
       <div class="control__setting">
         <input type="checkbox" checked id="approvedOnlyCheckbox">
         <span class="control__label">Approvals only</span>
+        <input type="checkbox" id="spanningForestCheckbox">
+        <span class="control__label">Spanning forest</span>
       </div>
       <div class="control__setting">
         <input type="text" placeholder="find" id="findTextbox">
-      </div>
-      <div class="control__setting">
-        <button id="spanningForestButton">Spanning forest</button>
       </div>
     </div>
   </div>
@@ -214,7 +213,7 @@
     const endDateSliderElement = document.getElementById("end-date-slider");
     const approvedOnlyCheckboxElement = document.getElementById("approvedOnlyCheckbox");
     const findTextboxElement = document.getElementById("findTextbox");
-    const spanningForestButtonElement = document.getElementById("spanningForestButton");
+    const spanningForestCheckboxElement = document.getElementById("spanningForestCheckbox");
 
     function interpolateDate(date1, date2, factor) {
       const time1 = date1.getTime();
@@ -307,31 +306,31 @@
       }
     }
 
-    function filterData(nodeCountThreshold, linkCountThreshold) {
-      console.log(`node threshold ${nodeCountThreshold} link threshold ${linkCountThreshold}`);
-
-      // compose nodes and edges lists
-      const aggregated = aggregateReviews();
-
-      const filteredNodes = aggregated.nodes.filter(node => {
+    function filterNodes(graphData, nodeCountThreshold) {
+      const filteredNodes = graphData.nodes.filter(node => {
         return (node.review_given + node.review_received) >= nodeCountThreshold;
       });
 
-      const filteredNodeIds = new Set(filteredNodes.map(node => node.id));
+      const nodeIds = new Set(filteredNodes.map(node => node.id));
 
       // make sure we only leave links which point to existing nodes
-      const filteredLinks = aggregated.links.filter(link => {
-        return (
-          link.count >= linkCountThreshold &&
-          filteredNodeIds.has(link.source.id) &&
-          filteredNodeIds.has(link.target.id)
-        );
+      const filteredLinks = graphData.links.filter(link => {
+        return nodeIds.has(link.source.id) && nodeIds.has(link.target.id);
       });
-
-      console.log(`nodes left: ${filteredNodes.length}, links ${filteredLinks.length}`);
 
       return {
         nodes: filteredNodes,
+        links: filteredLinks,
+      }
+    }
+
+    function filterLinks(graphData, linkCountThreshold) {
+      const filteredLinks = graphData.links.filter(link => {
+        return link.count >= linkCountThreshold;
+      });
+
+      return {
+        nodes: graphData.nodes,
         links: filteredLinks,
       }
     }
@@ -385,14 +384,8 @@
       });
     }
 
-    function showSpanningForest() {
-      nodeSliderElement.value = nodeSliderElement.min;
-      linkSliderElement.value = linkSliderElement.min;
-
-      let graphData = aggregateReviews();
-
-      // use Kruskal algorithm to find spaning forest
-
+    // implements Kruskal algorithm to find spanning forest
+    function findSpanningForest(graphData) {
       // disjoint set house-keeping
       const parentMap = new Map();
 
@@ -430,29 +423,63 @@
         }
       });
 
-      // color the spanning links differently
-      spanningTreeLinks.forEach((link) => {
-        link.color = defaultColor;
-      });
-
-      graphData = {
+      return {
         nodes: graphData.nodes,
         links: spanningTreeLinks,
       }
-
-      graphData = poolGraphData(graphData);
-      myGraph.graphData(graphData);
     }
 
-    spanningForestButtonElement.onclick = (event) => showSpanningForest();
+    function arrayToMap(elements) {
+      const map = new Map();
+      elements.forEach((element) => {
+        map.set(element.id, element)
+      });
+      return map;
+    }
+
+    function mergeLinks(graphDataMain, graphDataExtra) {
+      const resultLinks = structuredClone(graphDataMain.links);
+      const mainLinksMap = arrayToMap(graphDataMain.links);
+      graphDataExtra.links.forEach((link) => {
+        if (!mainLinksMap.has(link.id)) {
+          resultLinks.push(link);
+        }
+      });
+      return {
+        nodes: graphDataMain.nodes,
+        links: resultLinks,
+      }
+    }
 
     function recompute() {
       console.log('recomputing...');
       const nodeThresholdValue = parseFloat(nodeSliderElement.value);
       const linkThresholdValue = parseFloat(linkSliderElement.value);
-      let graphData = filterData(nodeThresholdValue, linkThresholdValue);
+
+      // handle time range filters, aggregate the counts
+      let graphData = aggregateReviews();
+
+      graphData = filterNodes(graphData, nodeThresholdValue);
+
+      if (spanningForestCheckboxElement.checked) {
+        spanningTreeData = findSpanningForest(graphData);
+
+        spanningTreeData.links.forEach((link) => {
+          link.color = defaultColor;
+        });
+
+        filteredTreeData = filterLinks(graphData, linkThresholdValue);
+        graphData = mergeLinks(spanningTreeData, filteredTreeData);
+      } else {
+        graphData = filterLinks(graphData, linkThresholdValue);
+      }
+
       handleSearch(graphData);
+
       graphData = poolGraphData(graphData);
+
+      console.log(`nodes: ${graphData.nodes.length}, links: ${graphData.links.length}`);
+
       myGraph.graphData(graphData);
     }
 
@@ -474,6 +501,7 @@
     startDateSliderElement.oninput = (event) => debouncedRecompute();
     endDateSliderElement.oninput = (event) => debouncedRecompute();
     approvedOnlyCheckboxElement.onchange = (event) => debouncedRecompute();
+    spanningForestCheckboxElement.onchange = (event) => debouncedRecompute();
     findTextboxElement.oninput = (event) => debouncedRecompute();
 
     // handle initial state
