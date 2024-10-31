@@ -28,7 +28,7 @@
       position: relative;
     }
     #controls {
-      width: 300px;
+      width: 340px;
       position: absolute;
       top: 10px;
       right: 16px;
@@ -507,7 +507,20 @@
     // handle initial state
     document.addEventListener('DOMContentLoaded', () => recompute());
   </script>
+
   <script>
+    // update limits on filter sliders for node and links thresholds
+    document.addEventListener('DOMContentLoaded', () => {
+      const aggregated = aggregateReviews();
+      const maxNodeThreshold = Math.max(...aggregated.nodes.map(node => node.review_given + node.review_received));
+      const maxLinkThreshold = Math.max(...aggregated.links.map(link => link.count));
+      nodeSliderElement.max = maxNodeThreshold;
+      linkSliderElement.max = maxLinkThreshold;
+    });
+  </script>
+
+  <script>
+    // dragging support
     let isDragStartHandled = false;
 
     function getNeighbors(nodeId) {
