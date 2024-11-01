@@ -26,7 +26,7 @@ class PrReviewsReport(ReportBase):
         reviews_df = reviews_df[reviews_df["is_self_review"] == False].copy()
         # init missing review timestamp from the pr creation date itself just to
         # provide some reasonable time reference
-        reviews_df['timestamp'] = reviews_df['timestamp'].fillna(reviews_df["bitbucker_pr_created_date"])
+        reviews_df['timestamp'] = reviews_df['timestamp'].fillna(reviews_df["bitbucket_pr_created_date"])
 
         ignored_users = read_optional(config, "ignored-users", [])
 

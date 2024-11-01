@@ -27,4 +27,4 @@ class DatasetsExportReport(ReportBase):
 
         for name, df in datasets_map.items():
             out_path = os.path.join(out_dir, "%s.csv" % name)
-            df.to_csv(out_path)
+            df.to_csv(out_path, index=False)
