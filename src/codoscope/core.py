@@ -4,6 +4,7 @@ from codoscope.config import read_mandatory
 from codoscope.datasets import Datasets
 from codoscope.exceptions import ConfigError
 from codoscope.processors.remap_users import RemapUsersProcessor
+from codoscope.processors.anonymize import AnonymizingProcessor
 from codoscope.reports.common import ReportType
 from codoscope.reports.registry import REPORTS_BY_TYPE
 from codoscope.sources.bitbucket import ingest_bitbucket
@@ -57,6 +58,9 @@ def run_processors(config: dict, datasets: Datasets) -> None:
         LOGGER.info('handling "%s" processor', processor_name)
         if processor_type == "remap-users":
             processor = RemapUsersProcessor(processor_config)
+            processor.execute(datasets)
+        elif processor_type == "anonymize":
+            processor = AnonymizingProcessor(processor_config)
             processor.execute(datasets)
         else:
             raise ConfigError('unknown processor type: "%s"' % processor_type)

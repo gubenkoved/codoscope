@@ -20,6 +20,8 @@ cycler==0.12.1
     # via matplotlib
 deprecated==1.2.14
     # via atlassian-python-api
+faker==30.8.2
+    # via codoscope (setup.py)
 fonttools==4.54.1
     # via matplotlib
 gitdb==4.0.11
@@ -67,6 +69,7 @@ pyparsing==3.2.0
 python-dateutil==2.9.0.post0
     # via
     #   codoscope (setup.py)
+    #   faker
     #   matplotlib
     #   pandas
 pytz==2024.2
@@ -89,6 +92,8 @@ soupsieve==2.6
     # via beautifulsoup4
 tenacity==9.0.0
     # via plotly
+typing-extensions==4.12.2
+    # via faker
 tzdata==2024.2
     # via pandas
 tzlocal==5.2
