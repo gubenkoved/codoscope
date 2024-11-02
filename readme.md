@@ -15,6 +15,10 @@ It can be used to gather insights when used with extreme care and due diligence.
 3. Install requirements `python -m pip install -r requirements.txt`
 4. Run `codoscope --config-path config.yaml process`
 
+# Prerequsites
+
+* Python >= 3.12
+
 ## Sample configuration file
 
 The simplest config file that allows to ingest a repository and build some simple reports is below.

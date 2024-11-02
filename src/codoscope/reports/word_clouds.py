@@ -79,6 +79,8 @@ class WordCloudsReport(ReportBase):
             texts = []
             for idx, row in group_df.iterrows():
                 for field, weight in text_fields.items():
+                    if field not in row:
+                        continue
                     val = row[field]
                     if val and not pandas.isna(val):
                         texts.append(("%s " % row[field]) * weight)
