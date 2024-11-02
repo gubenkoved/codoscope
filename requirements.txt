@@ -58,6 +58,8 @@ packaging==24.1
     #   plotly
 pandas==2.2.3
     # via codoscope (setup.py)
+pathvalidate==3.2.1
+    # via codoscope (setup.py)
 pillow==11.0.0
     # via
     #   matplotlib

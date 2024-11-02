@@ -17,6 +17,8 @@ if __name__ == "__main__":
             "python-dateutil",
             "wordcloud",
             "Jinja2",
+            "Faker",
+            "pathvalidate",
         ],
         entry_points={
             "console_scripts": ["codoscope=codoscope.cli:entrypoint"],

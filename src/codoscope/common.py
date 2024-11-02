@@ -4,6 +4,8 @@ import os.path
 
 import jinja2
 import pandas
+import pathvalidate
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -29,8 +31,7 @@ def sanitize_filename(string: str) -> str:
     Given arbitrary string returns string that is safe to be used
     as filename with forbidden characters replaced/removed.
     """
-    # TODO: implement me
-    return string
+    return pathvalidate.sanitize_filename(string)
 
 
 def ensure_dir_for_path(path: str):

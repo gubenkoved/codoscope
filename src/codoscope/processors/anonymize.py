@@ -39,7 +39,9 @@ class AnonymizingProcessor(ProcessorBase):
                 activity_df.at[index, "user"] = self.remap("user", user, self.faker.name)
 
             if user_email:
-                activity_df.at[index, "user_email"] = self.remap("email", user, self.faker.company_email)
+                activity_df.at[index, "user_email"] = self.remap(
+                    "email", user, self.faker.company_email
+                )
 
     def remap_reviews(self, reviews_df: pandas.DataFrame) -> None:
         for index, row in reviews_df.iterrows():
@@ -47,10 +49,14 @@ class AnonymizingProcessor(ProcessorBase):
             reviewee_user = row["reviewee_user"]
 
             if reviewer_user:
-                reviews_df.at[index, "reviewee_user"] = self.remap("user", reviewer_user, self.faker.name)
+                reviews_df.at[index, "reviewee_user"] = self.remap(
+                    "user", reviewer_user, self.faker.name
+                )
 
             if reviewee_user:
-                reviews_df.at[index, "reviewer_user"] = self.remap("user", reviewee_user, self.faker.name)
+                reviews_df.at[index, "reviewer_user"] = self.remap(
+                    "user", reviewee_user, self.faker.name
+                )
 
     def execute(self, datasets: Datasets) -> None:
         self.remap_activity(datasets.activity)
