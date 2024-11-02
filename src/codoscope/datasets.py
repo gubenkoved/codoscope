@@ -174,12 +174,17 @@ def extract_activity(state: StateModel) -> pandas.DataFrame:
     df.sort_values(by="timestamp", ascending=True, na_position="first", inplace=True)
 
     # note: Int64 can hold NaN values (as opposed to int)
-    df["bitbucket_pr_id"] = df["bitbucket_pr_id"].astype("Int64")
-    df["commit_added_lines"] = df["commit_added_lines"].astype("Int64")
-    df["commit_removed_lines"] = df["commit_removed_lines"].astype("Int64")
-    df["commit_changed_lines"] = df["commit_changed_lines"].astype("Int64")
+    set_column_type(df, "bitbucket_pr_id", "Int64")
+    set_column_type(df, "commit_added_lines", "Int64")
+    set_column_type(df, "commit_removed_lines", "Int64")
+    set_column_type(df, "commit_changed_lines", "Int64")
 
     return df
+
+
+def set_column_type(df: pandas.DataFrame, column_name: str, data_type: str) -> None:
+    if column_name in df.columns:
+        df[column_name] = df[column_name].astype(data_type)
 
 
 def extract_reviews(state: StateModel) -> pandas.DataFrame:
@@ -214,6 +219,9 @@ def extract_reviews(state: StateModel) -> pandas.DataFrame:
                             )
 
     df = pandas.DataFrame(data)
+
+    if len(df) == 0:
+        return df
 
     df.sort_values(
         by=["bitbucket_pr_created_date", "timestamp"],
