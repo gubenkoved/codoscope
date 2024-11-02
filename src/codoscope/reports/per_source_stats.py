@@ -22,6 +22,7 @@ from codoscope.state import SourceType, StateModel
 from codoscope.widgets.aggregated_counts import aggregated_counts
 from codoscope.widgets.common import PlotlyFigureWidget
 from codoscope.widgets.line_counts_stats import line_counts_stats
+from codoscope.widgets.code_ownership import code_ownership
 
 LOGGER = logging.getLogger(__name__)
 
@@ -85,6 +86,9 @@ class PerSourceStatsReport(ReportBase):
                 title="Weekly Line Counts",
             )
             widgets.append(line_counts_widget)
+
+            code_ownership_widget = code_ownership(df)
+            widgets.append(code_ownership_widget)
 
         render_widgets_report(
             report_path,

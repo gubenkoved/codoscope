@@ -48,7 +48,13 @@ def extract_activity(state: StateModel) -> pandas.DataFrame:
                         "commit_added_lines": commit.stats.total_insertions,
                         "commit_removed_lines": commit.stats.total_deletions,
                         "commit_changed_lines": commit.stats.total_changed_lines,
-                        "commit_changed_files": list(commit.stats.changed_files),
+                        "commit_changed_files_map": {
+                            k: {
+                                "added": v.insertions,
+                                "deleted": v.deletions,
+                            }
+                            for k, v in commit.stats.changed_files.items()
+                        },
                         "commit_is_merge_commit": commit.is_merge_commit,
                         "size_class": max(
                             5.0,
@@ -165,12 +171,7 @@ def extract_activity(state: StateModel) -> pandas.DataFrame:
 
     df = pandas.DataFrame(data)
 
-    df.sort_values(
-        by='timestamp',
-        ascending=True,
-        na_position='first',
-        inplace=True
-    )
+    df.sort_values(by="timestamp", ascending=True, na_position="first", inplace=True)
 
     # note: Int64 can hold NaN values (as opposed to int)
     df["bitbucket_pr_id"] = df["bitbucket_pr_id"].astype("Int64")
@@ -215,10 +216,10 @@ def extract_reviews(state: StateModel) -> pandas.DataFrame:
     df = pandas.DataFrame(data)
 
     df.sort_values(
-        by=['bitbucket_pr_created_date', 'timestamp'],
+        by=["bitbucket_pr_created_date", "timestamp"],
         ascending=True,
-        na_position='first',
-        inplace=True
+        na_position="first",
+        inplace=True,
     )
 
     return df

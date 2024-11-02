@@ -22,6 +22,7 @@ class ReportType(enum.StrEnum):
     DATASETS_EXPORT = "datasets-export"
     WORD_CLOUDS = "word-clouds"
     PR_REVIEWS = "pr-reviews"
+    CODE_OWNERSHIP = "code-ownership"
     INDEX = "index"
 
 
