@@ -6,6 +6,8 @@ This a simple tool to gather and get insights into the software development proc
 However, we naturally accumulate a lot of data, and it is beautiful and precious.
 It can be used to gather insights when used with extreme care and due diligence.
 
+![image](https://github.com/user-attachments/assets/8f95611d-3068-49da-9e32-93a027b05bb1)
+
 # How to use it?
 
 1. Create config YAML file
@@ -42,9 +44,16 @@ reports:
     timezone: utc
     out-dir: reports/per-user-stats
 
+  - name: pr-reviews
+    type: pr-reviews
+    ignored-users:
+      - Build Bot
+    out-path: reports/pr-reviews.html
+
   - name: word-clouds
     type: word-clouds
     grouping-period: Q
+    out-path: reports/word-clouds.html
 ```
 
 For more examples refer to sample [config.yaml](config.yaml).
