@@ -11,7 +11,9 @@ It can be used to gather insights when used with extreme care and due diligence.
 # How to use it?
 
 1. Create config YAML file
-2. Run `codoscope --config-path config.yaml`
+2. Create virtual environment for dependencies `python -m venv .venv && source .venv/bin/activate`
+3. Install requirements `python -m pip install -r requirements.txt`
+4. Run `codoscope --config-path config.yaml process`
 
 ## Sample configuration file
 
@@ -89,8 +91,20 @@ processors:
 
 Powered by [plotly](https://github.com/plotly/plotly.py) it allows to present hundreds of thousands of data points in a single interactive chart with relative ease.
 
-### Overview
+### Reports samples
 
-![sample-1](https://github.com/user-attachments/assets/36a76223-7bea-4b50-bd50-1cfb2ec04746)
+![sample-overview](https://github.com/user-attachments/assets/36a76223-7bea-4b50-bd50-1cfb2ec04746)
 
-![sample-2](https://github.com/user-attachments/assets/aeadbc3d-13aa-4026-9422-ebd1dbc01040)
+![sample-overview-2](https://github.com/user-attachments/assets/aeadbc3d-13aa-4026-9422-ebd1dbc01040)
+
+Based on private repository however the data is anonymized, user names are randomly generated.
+
+https://github.com/user-attachments/assets/f82079a8-114b-44ef-9552-2155fea22096
+
+The below is based on public Apache Lucene repository (https://github.com/apache/lucene).
+
+![sample-line-counts](https://github.com/user-attachments/assets/d58d4e9e-b80a-451c-a7d7-2a8674285fcf)
+
+![sample-code-map](https://github.com/user-attachments/assets/7225d016-6ed1-4028-b717-ede723d205c6)
+
+![sample-week-day-stats](https://github.com/user-attachments/assets/5558f704-0768-4f09-97cf-0314b19748e3)
