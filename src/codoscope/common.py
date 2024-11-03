@@ -63,6 +63,24 @@ def convert_timezone(
     return df
 
 
+def apply_filter(
+    df: pandas.DataFrame,
+    expr: str,
+) -> pandas.DataFrame:
+    if not expr:
+        return df
+    count_before_filter = len(df)
+    filtered_df = df.query(expr)
+    count_after_filter = len(filtered_df)
+    LOGGER.info(
+        'filter "%s" left %d of %d data points',
+        expr,
+        count_after_filter,
+        count_before_filter,
+    )
+    return filtered_df
+
+
 def render_jinja_template(template_name: str, context: dict) -> str:
     jinja_env = jinja2.Environment()
     with open(os.path.join(TEMPLATES_DIR, template_name)) as f:

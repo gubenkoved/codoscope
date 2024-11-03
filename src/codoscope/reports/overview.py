@@ -6,7 +6,12 @@ import os.path
 import pandas
 import plotly.graph_objects as go
 
-from codoscope.common import NA_REPLACEMENT, convert_timezone, ensure_dir_for_path
+from codoscope.common import (
+    NA_REPLACEMENT,
+    convert_timezone,
+    ensure_dir_for_path,
+    apply_filter,
+)
 from codoscope.config import read_mandatory, read_optional
 from codoscope.datasets import Datasets
 from codoscope.reports.common import (
@@ -22,12 +27,6 @@ from codoscope.widgets.common import CompositeWidget, PlotlyFigureWidget
 from codoscope.widgets.simple_activity_histogram import simple_activity_histogram
 
 LOGGER = logging.getLogger(__name__)
-
-
-def apply_filter(df: pandas.DataFrame, expr: str) -> pandas.DataFrame:
-    local_vars = {col: df[col] for col in df.columns}
-    filtered_df = df.eval(expr, local_dict=local_vars)
-    return df[filtered_df]
 
 
 def people_timeline(df: pandas.DataFrame) -> PlotlyFigureWidget:
@@ -116,9 +115,6 @@ class OverviewReport(ReportBase):
         out_path = os.path.abspath(read_mandatory(config, "out-path"))
         ensure_dir_for_path(out_path)
 
-        # TODO: include somewhere in the report filter and timezone used
-        filter_expr = read_optional(config, "filter")
-
         activity_df = convert_timezone(
             datasets.activity,
             timezone_name=config.get("timezone"),
@@ -126,16 +122,8 @@ class OverviewReport(ReportBase):
         )
 
         # apply filters if applicable
-        if filter_expr:
-            count_before_filter = len(activity_df)
-            activity_df = apply_filter(activity_df, filter_expr)
-            count_after_filter = len(activity_df)
-            LOGGER.info(
-                'filter "%s" left %d of %d data points',
-                filter_expr,
-                count_after_filter,
-                count_before_filter,
-            )
+        filter_expr = read_optional(config, "filter")
+        activity_df = apply_filter(activity_df, filter_expr)
 
         LOGGER.info("total data points: %d", len(activity_df))
 

@@ -10,8 +10,12 @@ from codoscope.common import (
     convert_timezone,
     ensure_dir,
     sanitize_filename,
+    apply_filter,
 )
-from codoscope.config import read_mandatory
+from codoscope.config import (
+    read_mandatory,
+    read_optional,
+)
 from codoscope.datasets import Datasets
 from codoscope.reports.common import (
     ReportBase,
@@ -32,6 +36,12 @@ from codoscope.widgets.common import CompositeWidget, PlotlyFigureWidget, Widget
 from codoscope.widgets.line_counts_stats import line_counts_stats
 
 LOGGER = logging.getLogger(__name__)
+
+
+def separate_merge_commits(activity_df: pandas.DataFrame):
+    activity_df = activity_df.copy()
+    activity_df.loc[activity_df["commit_is_merge_commit"] == True, "activity_type"] = "merge commit"
+    return activity_df
 
 
 class PerUserStatsReport(ReportBase):
@@ -153,7 +163,10 @@ class PerUserStatsReport(ReportBase):
         render_widgets_report(
             report_path,
             [
-                activity_scatter(df_normalized, extended_mode=True),
+                activity_scatter(
+                    separate_merge_commits(df_normalized),
+                    extended_mode=True,
+                ),
                 aggregated_counts(
                     df_normalized,
                     group_by=["source_name", "activity_type"],
@@ -197,7 +210,12 @@ class PerUserStatsReport(ReportBase):
 
         timezone_name = config.get("timezone", "utc")
 
-        grouped_by_user = datasets.activity.groupby(["user"])
+        activity_df = datasets.activity
+
+        filter_expr = read_optional(config, "filter")
+        activity_df = apply_filter(activity_df, filter_expr)
+
+        grouped_by_user = activity_df.groupby(["user"])
 
         processed_count = 0
         for (user_name,), user_df in grouped_by_user:

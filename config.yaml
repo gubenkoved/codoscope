@@ -41,7 +41,9 @@ reports:
     type: overview
     enabled: true
     out-path: reports/overview-filtered.html
-    filter: "'John' in user"
+    filter: "'John Smith' == user"
+    # DataFrame query API is used
+    # filter: "user.str.contains('Smith') == True"
 
   - name: overview-tz-normalized
     type: overview

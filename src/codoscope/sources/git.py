@@ -82,7 +82,7 @@ def ingest_git_repo(
     config: dict,
     repo_state: RepoModel | None,
     path: str,
-    branches: list[str] = None,
+    branches: list[str] | None = None,
     ingestion_limit: int | None = None,
 ) -> RepoModel:
     repo_state = repo_state or RepoModel()
@@ -105,7 +105,7 @@ def ingest_git_repo(
                 return True
         return False
 
-    ingestion_limit = ingestion_limit or math.inf
+    ingestion_limit: float = ingestion_limit or math.inf
 
     for ref in remote.refs:
         if commits_counter >= ingestion_limit:
@@ -123,6 +123,12 @@ def ingest_git_repo(
             if commits_counter >= ingestion_limit:
                 LOGGER.warning("  ingestion limit of %d reached", ingestion_limit)
                 break
+
+            if commit.author is None:
+                LOGGER.warning("commit %s has unknown author - skip", commit.hexsha)
+                continue
+
+            assert commit.author is not None
 
             commits_counter += 1
 
