@@ -55,6 +55,11 @@ def run_processors(config: dict, datasets: Datasets) -> None:
     for processor_config in config.get("processors", []):
         processor_name = processor_config["name"]
         processor_type = processor_config["type"]
+
+        if not processor_config.get("enabled", True):
+            LOGGER.warning('skip disabled "%s" processor', processor_name)
+            continue
+
         LOGGER.info('handling "%s" processor', processor_name)
         if processor_type == "remap-users":
             processor = RemapUsersProcessor(processor_config)
