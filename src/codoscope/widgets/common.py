@@ -73,9 +73,7 @@ class CompositeWidget(WidgetBase):
         # trigger resize so that plotly graphs can realize correct width for them
         html += f"""
         <script>
-            const plotlyGraphs = document.querySelectorAll('#{id_} .plotly-graph-div');
-
-            plotlyGraphs.forEach(function(graph) {{
+            document.querySelectorAll('#{id_} .plotly-graph-div').forEach(function(graph) {{
                 Plotly.Plots.resize(graph);
             }});
         </script>
