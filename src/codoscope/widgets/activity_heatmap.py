@@ -1,18 +1,17 @@
-from datetime import datetime
 
 import plotly.graph_objects as go
 from pandas import DataFrame
 
+from codoscope.common import WEEKDAY_ORDER
 from codoscope.reports.common import setup_default_layout
 from codoscope.widgets.common import PlotlyFigureWidget
-from codoscope.common import WEEKDAY_ORDER
 
 
 def activity_heatmap(
     activity_df: DataFrame,
     title: str | None = None,
     height: int = 310,
-    timezone_name: str = 'utc',
+    timezone_name: str = "utc",
 ) -> PlotlyFigureWidget | None:
     activity_df = activity_df.set_index("timestamp")
 
@@ -32,9 +31,9 @@ def activity_heatmap(
     fig = go.Figure()
 
     colorscale = [
-        [0.0, '#ffffff'],
-        [0.1, '#c3e0d7'],
-        [1.0, '#007d53']
+        [0.0, "#ffffff"],
+        [0.1, "#c3e0d7"],
+        [1.0, "#007d53"],
     ]
 
     fig.add_trace(

@@ -1,8 +1,8 @@
 import logging
+from collections import defaultdict
 
 import pandas
 from faker import Faker
-from collections import defaultdict
 
 from codoscope.datasets import Datasets
 from codoscope.processors.common import ProcessorBase, ProcessorType

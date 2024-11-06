@@ -7,15 +7,12 @@ import wordcloud
 
 from codoscope.common import (
     NA_REPLACEMENT,
+    apply_filter,
     convert_timezone,
     ensure_dir,
     sanitize_filename,
-    apply_filter,
 )
-from codoscope.config import (
-    read_mandatory,
-    read_optional,
-)
+from codoscope.config import read_mandatory, read_optional
 from codoscope.datasets import Datasets
 from codoscope.reports.common import (
     ReportBase,
@@ -26,18 +23,16 @@ from codoscope.reports.common import (
 from codoscope.reports.overview import activity_scatter
 from codoscope.reports.word_clouds import render_word_cloud_html
 from codoscope.state import StateModel
+from codoscope.widgets import activity_trends
 from codoscope.widgets.activity_by_weekday import (
     activity_by_weekday,
     activity_by_weekday_2d,
     activity_offset_hisogram,
 )
-from codoscope.widgets.activity_heatmap import (
-    activity_heatmap,
-)
+from codoscope.widgets.activity_heatmap import activity_heatmap
 from codoscope.widgets.aggregated_counts import aggregated_counts
 from codoscope.widgets.common import CompositeWidget, PlotlyFigureWidget, Widget
 from codoscope.widgets.line_counts_stats import line_counts_stats
-from codoscope.widgets import activity_trends
 
 LOGGER = logging.getLogger(__name__)
 

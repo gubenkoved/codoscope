@@ -1,6 +1,7 @@
+from collections import defaultdict
+
 import pandas
 import plotly.graph_objects as go
-from collections import defaultdict
 
 from codoscope.reports.common import setup_default_layout
 from codoscope.widgets.common import PlotlyFigureWidget

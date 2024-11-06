@@ -4,7 +4,6 @@ import typing
 from datetime import datetime
 
 import plotly.graph_objects as go
-import plotly.colors
 import tzlocal
 
 from codoscope.common import render_jinja_template

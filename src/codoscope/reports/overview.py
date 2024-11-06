@@ -8,9 +8,9 @@ import plotly.graph_objects as go
 
 from codoscope.common import (
     NA_REPLACEMENT,
+    apply_filter,
     convert_timezone,
     ensure_dir_for_path,
-    apply_filter,
 )
 from codoscope.config import read_mandatory, read_optional
 from codoscope.datasets import Datasets
@@ -22,10 +22,10 @@ from codoscope.reports.common import (
 )
 from codoscope.state import StateModel
 from codoscope.widgets.active_contributors_count import active_contributors_count
+from codoscope.widgets.activity_heatmap import activity_heatmap
 from codoscope.widgets.activity_scatter import activity_scatter
 from codoscope.widgets.common import CompositeWidget, PlotlyFigureWidget
 from codoscope.widgets.simple_activity_histogram import simple_activity_histogram
-from codoscope.widgets.activity_heatmap import activity_heatmap
 
 LOGGER = logging.getLogger(__name__)
 

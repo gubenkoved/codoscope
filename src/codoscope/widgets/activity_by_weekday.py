@@ -4,9 +4,9 @@ import pandas
 import plotly.graph_objects as go
 from pandas import DataFrame
 
+from codoscope.common import WEEKDAY_ORDER
 from codoscope.reports.common import setup_default_layout
 from codoscope.widgets.common import PlotlyFigureWidget
-from codoscope.common import WEEKDAY_ORDER
 
 
 def activity_by_weekday(

@@ -19,11 +19,11 @@ from codoscope.reports.common import (
     setup_default_layout,
 )
 from codoscope.state import SourceType, StateModel
+from codoscope.widgets.activity_heatmap import activity_heatmap
 from codoscope.widgets.aggregated_counts import aggregated_counts
+from codoscope.widgets.code_ownership import code_ownership
 from codoscope.widgets.common import PlotlyFigureWidget
 from codoscope.widgets.line_counts_stats import line_counts_stats
-from codoscope.widgets.code_ownership import code_ownership
-from codoscope.widgets.activity_heatmap import activity_heatmap
 
 LOGGER = logging.getLogger(__name__)
 

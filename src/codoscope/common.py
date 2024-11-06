@@ -6,7 +6,6 @@ import jinja2
 import pandas
 import pathvalidate
 
-
 LOGGER = logging.getLogger(__name__)
 
 

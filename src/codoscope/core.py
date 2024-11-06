@@ -3,8 +3,8 @@ import logging
 from codoscope.config import read_mandatory
 from codoscope.datasets import Datasets
 from codoscope.exceptions import ConfigError
-from codoscope.processors.remap_users import RemapUsersProcessor
 from codoscope.processors.anonymize import AnonymizingProcessor
+from codoscope.processors.remap_users import RemapUsersProcessor
 from codoscope.reports.common import ReportType
 from codoscope.reports.registry import REPORTS_BY_TYPE
 from codoscope.sources.bitbucket import ingest_bitbucket
