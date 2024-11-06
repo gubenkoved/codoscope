@@ -31,6 +31,9 @@ from codoscope.widgets.activity_by_weekday import (
     activity_by_weekday_2d,
     activity_offset_hisogram,
 )
+from codoscope.widgets.activity_heatmap import (
+    activity_heatmap,
+)
 from codoscope.widgets.aggregated_counts import aggregated_counts
 from codoscope.widgets.common import CompositeWidget, PlotlyFigureWidget, Widget
 from codoscope.widgets.line_counts_stats import line_counts_stats
@@ -167,6 +170,9 @@ class PerUserStatsReport(ReportBase):
                 activity_scatter(
                     separate_merge_commits(df_normalized),
                     extended_mode=True,
+                ),
+                activity_heatmap(
+                    df_normalized,
                 ),
                 aggregated_counts(
                     df_normalized,

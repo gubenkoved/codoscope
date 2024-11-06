@@ -23,6 +23,7 @@ from codoscope.widgets.aggregated_counts import aggregated_counts
 from codoscope.widgets.common import PlotlyFigureWidget
 from codoscope.widgets.line_counts_stats import line_counts_stats
 from codoscope.widgets.code_ownership import code_ownership
+from codoscope.widgets.activity_heatmap import activity_heatmap
 
 LOGGER = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ class PerSourceStatsReport(ReportBase):
     def get_type(cls) -> ReportType:
         return ReportType.PER_SOURCE_STATS
 
-    def weekly_stats_by_user(self, df: pandas.DataFrame) -> PlotlyFigureWidget:
+    def weekly_stats(self, df: pandas.DataFrame) -> PlotlyFigureWidget:
         df = df.set_index("timestamp")
         df["user"] = df["user"].fillna(NA_REPLACEMENT)
         df["activity_type"] = df["activity_type"].fillna(NA_REPLACEMENT)
@@ -75,7 +76,10 @@ class PerSourceStatsReport(ReportBase):
                 agg_period="W",
                 title="Weekly counts",
             ),
-            self.weekly_stats_by_user(df),
+            activity_heatmap(
+                df,
+            ),
+            self.weekly_stats(df),
         ]
 
         source_state = state.sources[source_name]

@@ -14,6 +14,16 @@ NA_REPLACEMENT = "unspecified"
 MODULE_DIR: str = os.path.dirname(__file__)
 TEMPLATES_DIR: str = os.path.join(MODULE_DIR, "templates")
 
+WEEKDAY_ORDER = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+]
+
 
 def date_time_minutes_offset(datetime):
     time = datetime.time()

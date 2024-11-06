@@ -6,16 +6,7 @@ from pandas import DataFrame
 
 from codoscope.reports.common import setup_default_layout
 from codoscope.widgets.common import PlotlyFigureWidget
-
-WEEKDAY_ORDER = [
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-    "Sunday",
-]
+from codoscope.common import WEEKDAY_ORDER
 
 
 def activity_by_weekday(
