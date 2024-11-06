@@ -25,6 +25,7 @@ from codoscope.widgets.active_contributors_count import active_contributors_coun
 from codoscope.widgets.activity_scatter import activity_scatter
 from codoscope.widgets.common import CompositeWidget, PlotlyFigureWidget
 from codoscope.widgets.simple_activity_histogram import simple_activity_histogram
+from codoscope.widgets.activity_heatmap import activity_heatmap
 
 LOGGER = logging.getLogger(__name__)
 
@@ -131,6 +132,7 @@ class OverviewReport(ReportBase):
             out_path,
             [
                 activity_scatter(activity_df),
+                activity_heatmap(activity_df),
                 people_timeline(activity_df),
                 CompositeWidget(
                     [
