@@ -5,7 +5,7 @@ import os.path
 import pandas
 import wordcloud
 
-from codoscope.common import ensure_dir_for_path
+from codoscope.common import convert_timezone, ensure_dir_for_path
 from codoscope.config import read_mandatory, read_optional
 from codoscope.datasets import Datasets
 from codoscope.reports.common import ReportBase, ReportType, render_html_report
@@ -52,8 +52,8 @@ class WordCloudsReport(ReportBase):
             grouping_period,
         )
 
-        df = datasets.activity.copy()
-        df["timestamp"] = pandas.to_datetime(df["timestamp"], utc=True)
+        df = datasets.get_all_activity().copy()
+        df = convert_timezone(df, timezone_name="utc")
 
         grouped = df.groupby(df["timestamp"].dt.to_period(grouping_period))
 

@@ -241,7 +241,7 @@ class PerUserStatsReport(ReportBase):
 
         timezone_name = config.get("timezone", "utc")
 
-        activity_df = datasets.activity
+        activity_df = datasets.get_all_activity()
 
         filter_expr = read_optional(config, "filter")
         activity_df = apply_filter(activity_df, filter_expr)

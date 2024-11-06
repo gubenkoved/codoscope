@@ -20,12 +20,11 @@ class PrReviewsReport(ReportBase):
         out_path = os.path.abspath(read_mandatory(config, "out-path"))
         ensure_dir_for_path(out_path)
 
-        if len(datasets.reviews) == 0:
+        if len(datasets.reviews_df) == 0:
             LOGGER.warning("no review data available")
             return
 
-        reviews_df = datasets.reviews
-        reviews_df = reviews_df[reviews_df["is_self_review"] == False].copy()
+        reviews_df = datasets.reviews_df[datasets.reviews_df["is_self_review"] == False].copy()
         # init missing review timestamp from the pr creation date itself just to
         # provide some reasonable time reference
         reviews_df["timestamp"] = reviews_df["timestamp"].fillna(

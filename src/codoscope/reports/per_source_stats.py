@@ -104,7 +104,7 @@ class PerSourceStatsReport(ReportBase):
         parent_dir_path = os.path.abspath(read_mandatory(config, "out-dir"))
         ensure_dir(parent_dir_path)
 
-        activity_df = convert_timezone(datasets.activity, timezone_name="utc")
+        activity_df = convert_timezone(datasets.get_all_activity(), timezone_name="utc")
 
         grouped_by_source = activity_df.groupby(["source_name"])
 

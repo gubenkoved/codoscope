@@ -20,11 +20,6 @@ class DatasetsExportReport(ReportBase):
         out_dir = os.path.abspath(read_mandatory(config, "out-dir"))
         ensure_dir(out_dir)
 
-        datasets_map = {
-            "activity": datasets.activity,
-            "reviews": datasets.reviews,
-        }
-
-        for name, df in datasets_map.items():
+        for name, df in datasets.get_all_data_frames().items():
             out_path = os.path.join(out_dir, "%s.csv" % name)
             df.to_csv(out_path, index=False)

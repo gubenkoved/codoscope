@@ -90,7 +90,7 @@ def discover_aliases(config: dict):
     core.run_processors(config, datasets)
 
     # process capture association after possible remapping happened
-    process_associations(datasets.activity, maintain_use_counter=True)
+    process_associations(datasets.get_all_activity(), maintain_use_counter=True)
 
     traversed: set[Node] = set()
     components: list[set[Node]] = []

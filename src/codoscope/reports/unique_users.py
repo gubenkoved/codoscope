@@ -22,7 +22,7 @@ class UniqueUsersReport(ReportBase):
         out_path = os.path.abspath(read_mandatory(config, "out-path"))
         ensure_dir_for_path(out_path)
 
-        df: DataFrame = datasets.activity.copy()
+        df: DataFrame = datasets.get_all_activity().copy()
 
         # fill user email with replacement string otherwise they won't be included into groupping
         df["user_email"] = df["user_email"].fillna("")

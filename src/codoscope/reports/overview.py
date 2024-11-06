@@ -117,7 +117,7 @@ class OverviewReport(ReportBase):
         ensure_dir_for_path(out_path)
 
         activity_df = convert_timezone(
-            datasets.activity,
+            datasets.get_all_activity(),
             timezone_name=config.get("timezone"),
             inplace=False,
         )

@@ -32,23 +32,23 @@ class RemapUsersProcessor(ProcessorBase):
     def get_type(self) -> ProcessorType:
         return ProcessorType.REMAP_USERS
 
-    def remap_activity(self, activity_df: pandas.DataFrame) -> None:
+    def remap_activity(self, dataset_name: str, activity_df: pandas.DataFrame) -> None:
         remapped_items_count = 0
         for index, row in activity_df.iterrows():
             user = row["user"]
             user_email = row["user_email"]
 
-            if user_email and user_email in self.email_to_canonical_name_map:
+            if not pandas.isna(user_email) and user_email in self.email_to_canonical_name_map:
                 activity_df.at[index, "user"] = self.email_to_canonical_name_map[user_email]
                 remapped_items_count += 1
                 continue
 
-            if user and user in self.name_to_canonical_name_map:
+            if not pandas.isna(user) and user in self.name_to_canonical_name_map:
                 activity_df.at[index, "user"] = self.name_to_canonical_name_map[user]
                 remapped_items_count += 1
                 continue
 
-        LOGGER.info("activity dataset: remapped %d items", remapped_items_count)
+        LOGGER.info("%s dataset: remapped %d items", dataset_name, remapped_items_count)
 
     def remap_reviews(self, reviews_df: pandas.DataFrame) -> None:
         remapped_items_count = 0
@@ -73,5 +73,6 @@ class RemapUsersProcessor(ProcessorBase):
         LOGGER.info("reviews dataset: remapped %d items", remapped_items_count)
 
     def execute(self, datasets: Datasets) -> None:
-        self.remap_activity(datasets.activity)
-        self.remap_reviews(datasets.reviews)
+        for dataset_name, activity_df in datasets.get_activity_data_frames().items():
+            self.remap_activity(dataset_name, activity_df)
+        self.remap_reviews(datasets.reviews_df)

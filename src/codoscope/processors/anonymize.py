@@ -59,5 +59,6 @@ class AnonymizingProcessor(ProcessorBase):
                 )
 
     def execute(self, datasets: Datasets) -> None:
-        self.remap_activity(datasets.activity)
-        self.remap_reviews(datasets.reviews)
+        for activity_df in datasets.get_activity_data_frames().values():
+            self.remap_activity(activity_df)
+        self.remap_reviews(datasets.reviews_df)
