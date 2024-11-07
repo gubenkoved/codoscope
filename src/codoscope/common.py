@@ -97,3 +97,9 @@ def render_jinja_template(template_name: str, context: dict) -> str:
         template = jinja_env.from_string(template_text)
         rendered_text = template.render(context)
         return rendered_text
+
+
+class Colors:
+    DARK_SEA_BLUE = "#326ba8"
+    WHITE = "white"
+    ALABASTER = "#fafafa"

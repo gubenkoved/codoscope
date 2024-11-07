@@ -31,6 +31,7 @@ from codoscope.widgets.activity_by_weekday import (
 )
 from codoscope.widgets.activity_heatmap import activity_heatmap
 from codoscope.widgets.aggregated_counts import aggregated_counts
+from codoscope.widgets.code_ownership import code_ownership
 from codoscope.widgets.common import CompositeWidget, PlotlyFigureWidget, Widget
 from codoscope.widgets.line_counts_stats import line_counts_stats
 
@@ -159,79 +160,90 @@ class PerUserStatsReport(ReportBase):
             """
         )
 
+        widgets = [
+            activity_scatter(
+                separate_merge_commits(df_normalized),
+                extended_mode=True,
+            ),
+            activity_heatmap(
+                df_normalized,
+            ),
+            aggregated_counts(
+                df_normalized,
+                group_by=["source_name", "activity_type"],
+                agg_period="W",
+                title="Weekly counts",
+            ),
+            line_counts_stats(df_normalized, agg_period="W", title="Weekly line counts"),
+            self.emails_timeline(df_normalized),
+            CompositeWidget(
+                [
+                    [
+                        activity_by_weekday(
+                            df_normalized,
+                            title=f"Weekday histogram ({timezone_name})",
+                        ),
+                        activity_by_weekday_2d(
+                            df_normalized,
+                            title=f"Weekday vs. time heatmap ({timezone_name})",
+                        ),
+                        activity_by_weekday_2d(
+                            commits_df,
+                            title="Commit heatmap (local time)",
+                        )
+                        or no_commits_replacement_widget,
+                        activity_offset_hisogram(
+                            commits_df,
+                            title="Commit time offsets",
+                        )
+                        or no_commits_replacement_widget,
+                    ]
+                ]
+            ),
+            CompositeWidget(
+                [
+                    [
+                        activity_trends.activity_trend(
+                            df_normalized,
+                            window_period="D",
+                            aggregation_period="ME",
+                            metrics=[
+                                activity_trends.Metric("monthly", "ME", "mean"),
+                            ],
+                            title="Monthly active days",
+                        ),
+                        activity_trends.activity_trend(
+                            df_normalized,
+                            window_period="h",
+                            aggregation_period="D",
+                            metrics=[
+                                activity_trends.Metric(
+                                    "weekly", "W", "mean", line_width=1.0, opacity=0.4
+                                ),
+                                activity_trends.Metric("monthly", "ME", "mean"),
+                                activity_trends.Metric("quaterly", "QE", "mean"),
+                                activity_trends.Metric("yearly", "YE", "mean", line_width=3.0),
+                            ],
+                            title="Daily active hours",
+                        ),
+                    ],
+                ]
+            ),
+        ]
+
+        for (source_name, ), source_commit_df in commits_df.groupby(["source_name"]):
+            widgets.append(
+                code_ownership(
+                    source_commit_df,
+                    title=f"Code changes ({source_name})",
+                )
+            )
+
+        widgets.append(self.commit_themes_wordcloud(df_normalized))
+
         render_widgets_report(
             report_path,
-            [
-                activity_scatter(
-                    separate_merge_commits(df_normalized),
-                    extended_mode=True,
-                ),
-                activity_heatmap(
-                    df_normalized,
-                ),
-                aggregated_counts(
-                    df_normalized,
-                    group_by=["source_name", "activity_type"],
-                    agg_period="W",
-                    title="Weekly counts",
-                ),
-                line_counts_stats(df_normalized, agg_period="W", title="Weekly line counts"),
-                self.emails_timeline(df_normalized),
-                CompositeWidget(
-                    [
-                        [
-                            activity_by_weekday(
-                                df_normalized,
-                                title=f"Weekday histogram ({timezone_name})",
-                            ),
-                            activity_by_weekday_2d(
-                                df_normalized,
-                                title=f"Weekday vs. time heatmap ({timezone_name})",
-                            ),
-                            activity_by_weekday_2d(
-                                commits_df,
-                                title="Commit heatmap (local time)",
-                            )
-                            or no_commits_replacement_widget,
-                            activity_offset_hisogram(
-                                commits_df,
-                                title="Commit time offsets",
-                            )
-                            or no_commits_replacement_widget,
-                        ]
-                    ]
-                ),
-                CompositeWidget(
-                    [
-                        [
-                            activity_trends.activity_trend(
-                                df_normalized,
-                                window_period="D",
-                                aggregation_period="ME",
-                                metrics=[
-                                    activity_trends.Metric("monthly", "ME", "mean"),
-                                ],
-                                title="Monthly active days",
-                            ),
-                            activity_trends.activity_trend(
-                                df_normalized,
-                                window_period="h",
-                                aggregation_period="D",
-                                metrics=[
-                                    activity_trends.Metric(
-                                        "weekly", "W", "mean", line_width=1.0, opacity=0.4
-                                    ),
-                                    activity_trends.Metric("monthly", "ME", "mean"),
-                                    activity_trends.Metric("quaterly", "QE", "mean"),
-                                    activity_trends.Metric("yearly", "YE", "mean", line_width=3.0),
-                                ],
-                                title="Daily active hours",
-                            ),
-                        ],
-                    ]
-                ),
-                self.commit_themes_wordcloud(df_normalized),
-            ],
+            widgets,
             title=f"user :: {user_name}",
         )
 

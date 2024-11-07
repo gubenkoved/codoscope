@@ -5,6 +5,7 @@ import plotly.graph_objects as go
 
 from codoscope.reports.common import setup_default_layout
 from codoscope.widgets.common import PlotlyFigureWidget
+from codoscope.common import Colors
 
 
 # TODO: add a way to only show current code base (how to detect the file movements?)
@@ -86,9 +87,11 @@ def code_ownership(
     ids, labels, parents, values = aggregate()
 
     # TODO: upon clicking update another simple bar plot map showing top
-    # contributors by changed lines
+    # contributors by changed lines using JS?
 
     fig = go.Figure()
+
+    # TODO: use hovertemplate and custom data to show added vs. removed counts
     fig.add_trace(
         go.Treemap(
             name="changed lines",
@@ -98,7 +101,7 @@ def code_ownership(
             values=values,
             branchvalues="total",
             maxdepth=maxdepth,
-            root_color="lightblue",
+            root_color=Colors.ALABASTER,
         )
     )
 
