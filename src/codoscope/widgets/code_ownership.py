@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 
 from codoscope.reports.common import setup_default_layout
 from codoscope.widgets.common import PlotlyFigureWidget
-from codoscope.common import Colors
+from codoscope.common import Colors, convert_timezone
 
 
 # TODO: add a way to only show current code base (how to detect the file movements?)
@@ -13,10 +13,16 @@ def code_ownership(
     activity_df: pandas.DataFrame,
     title: str = "Code changes map",
     maxdepth: int = 4,
-) -> PlotlyFigureWidget:
-    df = activity_df.set_index("timestamp")
+) -> PlotlyFigureWidget | None:
+    # make sure we only have commits
+    commits_df = activity_df[activity_df["activity_type"] == "commit"].copy()
 
-    commits_df = df[df["activity_type"] == "commit"]
+    if len(commits_df) == 0:
+        return None
+
+    # needed just to specify proper types for timestamp and avoid warnings
+    commits_df = convert_timezone(commits_df, timezone_name="utc")
+    commits_df = commits_df.set_index("timestamp")
 
     # user -> leaf path -> counts
     all_users_counts_map = defaultdict(

@@ -65,6 +65,9 @@ def activity_offset_hisogram(
         result: str = x.strftime("%z")
         return "%s:%s" % (result[:-2], result[-2:])
 
+    # copy data frame before making changes
+    activity_df = activity_df.copy()
+
     # can not use dt since timestamp here should not be normalized to utc
     activity_df["timezone_offset_numeric"] = activity_df["timestamp"].apply(get_utc_offset_seconds)
     activity_df["timezone_offset"] = activity_df["timestamp"].apply(format_offset)
@@ -107,6 +110,9 @@ def activity_by_weekday_2d(
 
     if len(activity_df) == 0:
         return None
+
+    # copy data frame before mking changes
+    activity_df = activity_df.copy()
 
     activity_df["weekday"] = activity_df["timestamp"].apply(lambda x: x.strftime("%A"))
     activity_df["hour"] = activity_df["timestamp"].apply(lambda x: x.hour)

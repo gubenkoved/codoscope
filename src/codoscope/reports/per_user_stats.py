@@ -231,10 +231,10 @@ class PerUserStatsReport(ReportBase):
             ),
         ]
 
-        for (source_name, ), source_commit_df in commits_df.groupby(["source_name"]):
+        for (source_name, ), per_source_commits_df in commits_df.groupby(["source_name"]):
             widgets.append(
                 code_ownership(
-                    source_commit_df,
+                    per_source_commits_df,
                     title=f"Code changes ({source_name})",
                 )
             )
