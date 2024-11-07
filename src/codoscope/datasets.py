@@ -286,6 +286,7 @@ def extract_reviews(state: StateModel) -> pandas.DataFrame:
         "reviewer_user": "string",
         "reviewee_user": "string",
         "is_self_review": "bool",
+        "has_approved": "bool",
         "timestamp": "object",
         "bitbucket_project_name": "string",
         "bitbucket_repo_name": "string",
