@@ -82,7 +82,7 @@ class WordCloudsReport(ReportBase):
                     if field not in row:
                         continue
                     val = row[field]
-                    if val and not pandas.isna(val):
+                    if not pandas.isna(val):
                         texts.append(("%s " % row[field]) * weight)
 
             wc = wordcloud.WordCloud(
