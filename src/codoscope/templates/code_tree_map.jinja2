@@ -1,0 +1,333 @@
+<!-- TODO: plotly script location should go from the python side -->
+<script charset="utf-8" src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<div id="{{container_id}}" style="display: flex; height: {{height}};">
+    <div style="flex: 3; position: relative;" class="code-tree-left">
+        <div style="position: absolute; top: 0px; left: 10px; padding: 4px; background: white;">
+            <label>
+                <input type="checkbox" class="code-tree-log-scale-input">Log scaling
+            </label>
+        </div>
+    </div>
+    <div style="flex: 1;" class="code-tree-right">
+    </div>
+</div>
+<!-- use module to avoid conflicts with other script blocks in the same page -->
+<script type="module">
+    // we need two "tojson" because first will get us JSON string,
+    // and second allows to embed it into the JS source code to be properly
+    // interpretted
+    const rawData = JSON.parse({{ data | tojson  | tojson  }});
+    const title = '{{title}}';
+    const maxDepth = {{max_depth}};
+    const fontFamily = 'Ubuntu';
+
+    const containerId = "{{container_id}}";
+    const leftDivElement = document.querySelector(`#${containerId} .code-tree-left`);
+    const rightDivElement = document.querySelector(`#${containerId} .code-tree-right`);
+    const logScaleElement = document.querySelector(`#${containerId} .code-tree-log-scale-input`);
+
+    function getParentPath(path) {
+        let parts = path.split('/').filter(Boolean);
+        parts.pop();
+        return parts.length > 0 ? parts.join('/') : null;
+    }
+
+    const rootPathReplacement = {
+        id: '$ROOT$',
+        label: "ROOT",
+    };
+
+    function aggregate() {
+        const ids = []
+        const labels = []
+        const parents = []
+        const customData = []
+        const values = []
+        const pathToIndexMap = new Map();
+
+        function ensureItem(path) {
+            if (!pathToIndexMap.has(path)) {
+                const newIndex = ids.length;
+                pathToIndexMap.set(path, newIndex);
+                ids.push(path);
+                parents.push(null);
+                labels.push(null);
+                values.push(0);
+                customData.push(null);
+            }
+            return pathToIndexMap.get(path);
+        }
+
+        function getParent(path) {
+            const parentPath = getParentPath(path);
+
+            if (parentPath == null) {
+                return rootPathReplacement.id;
+            }
+
+            return parentPath;
+        }
+
+        function getLabel(path) {
+            if (path == rootPathReplacement.id) {
+                return rootPathReplacement.label;
+            }
+            let parts = path.split('/').filter(Boolean);
+            return parts[parts.length - 1];
+        }
+
+        function countsToValue(counts) {
+            let value = counts.added_lines + counts.deleted_lines;
+            if (logScaleElement.checked) {
+                if (value <= 1) {
+                    value = 1;
+                }
+                value = 1 + Math.log(value, 2);
+            }
+            return value;
+        }
+
+        function propagate(path, counts) {
+            const idx = ensureItem(path);
+            labels[idx] = getLabel(path);
+            if (customData[idx] == null) {
+                customData[idx] = {
+                    added_lines: 0,
+                    deleted_lines: 0,
+                }
+            }
+            customData[idx].added_lines += counts.added_lines;
+            customData[idx].deleted_lines += counts.deleted_lines;
+            values[idx] += countsToValue(counts);
+            if (path != rootPathReplacement.id) {
+                const parentPath = getParent(path);
+                parents[idx] = parentPath;
+                propagate(parentPath, counts);
+            }
+        }
+
+        for (const [path, userData] of Object.entries(rawData)) {
+            for (const [user, countsData] of Object.entries(userData)) {
+                propagate(path, countsData);
+            }
+        }
+
+        return {
+            type: "treemap",
+            ids: ids,
+            labels: labels,
+            parents: parents,
+            values: values,
+            customdata: customData,
+            hovertemplate: "%{label}<br>added lines: %{customdata.added_lines}<br>deleted lines: %{customdata.deleted_lines}<extra></extra>",
+            branchvalues: "total",
+            maxdepth: maxDepth,
+            textfont: {
+                family: fontFamily,
+            },
+            hoverlabel: {
+                font: {
+                    family: fontFamily,
+                }
+            }
+        }
+    }
+
+    // not overly efficient implementation, but it works quite fast anyway
+    function userCountsMapForPath(queryPath) {
+        const userCountsMap = new Map();
+
+        function ensureUser(user) {
+            if (!userCountsMap.has(user)) {
+                userCountsMap.set(user, {
+                    added_lines: 0,
+                    deleted_lines: 0
+                })
+            }
+            return userCountsMap.get(user);
+        }
+
+        for (const [path, userData] of Object.entries(rawData)) {
+            for (const [user, countsData] of Object.entries(userData)) {
+                let curPath = path;
+                while (true) {
+                    if (curPath == queryPath) {
+                        const userQueryResultCounts = ensureUser(user);
+                        userQueryResultCounts.added_lines += countsData.added_lines;
+                        userQueryResultCounts.deleted_lines += countsData.deleted_lines;
+                    }
+                    if (curPath == null) {
+                        break;
+                    }
+                    curPath = getParentPath(curPath);
+                }
+            }
+        }
+
+        return userCountsMap;
+    }
+
+    function aggregateUsers(queryPath) {
+        const userCountsMap = userCountsMapForPath(queryPath);
+
+        const ids = []
+        const labels = []
+        const values = []
+        const parents = []
+        const texts = []
+        const colors = []
+        const idToIndexMap = new Map();
+
+        const rootReplacement = {
+            id: '$ROOT$',
+            label: 'ALL',
+        }
+
+        function ensureItem(id) {
+            if (!idToIndexMap.has(id)) {
+                const newIndex = ids.length;
+                idToIndexMap.set(id, newIndex);
+                ids.push(id);
+                labels.push(null);
+                values.push(0);
+                parents.push(null);
+                texts.push(null);
+                colors.push(null);
+            }
+            return idToIndexMap.get(id);
+        }
+
+        function countsToValue(counts) {
+            let value = counts.added_lines + counts.deleted_lines;
+            return value;
+        }
+
+        // adding "ALL" group
+        const rootIndex = ensureItem(rootReplacement.id);
+        labels[rootIndex] = rootReplacement.label;
+        texts[rootIndex] = "";
+
+        userCountsMap.forEach((value, key) => {
+            // add user itself
+            // add subcategories for added and removed
+            const userElementIdx = ensureItem(key);
+            labels[userElementIdx] = key;
+            parents[userElementIdx] = rootReplacement.id;
+            texts[userElementIdx] = `added: ${value.added_lines}, removed: ${value.deleted_lines}`;
+
+            const addedElementIdx = ensureItem(`${key} :: added`);
+            labels[addedElementIdx] = "added";
+            values[addedElementIdx] = value.added_lines;
+            parents[addedElementIdx] = key;
+            texts[addedElementIdx] = value.added_lines;
+
+            const deletedElementIdx = ensureItem(`${key} :: deleted`);
+            labels[deletedElementIdx] = "deleted";
+            values[deletedElementIdx] = value.deleted_lines;
+            parents[deletedElementIdx] = key;
+            texts[deletedElementIdx] = value.deleted_lines;
+        });
+
+        return {
+            type: "treemap",
+            ids: ids,
+            labels: labels,
+            parents: parents,
+            values: values,
+            text: texts,
+            branchvalues: "reminder",
+            textfont: {
+                family: fontFamily,
+            },
+            hovertemplate: "%{text}<extra></extra>",
+            hoverlabel: {
+                font: {
+                    family: fontFamily,
+                }
+            }
+        }
+    }
+
+    Plotly.newPlot(leftDivElement, [aggregate()], {
+        title: {
+            text: title,
+            font: {
+                family: fontFamily,
+            },
+
+        },
+        margin: {
+            l: 10,
+            r: 10,
+            b: 10,
+            t: 50,
+        },
+    }, {
+        responsive: true,
+    });
+    Plotly.newPlot(rightDivElement, [aggregateUsers(null)], {
+        title: {
+            text: 'Users',
+            font: {
+                family: fontFamily,
+            },
+        },
+        margin: {
+            l: 10,
+            r: 10,
+            b: 10,
+            t: 50,
+        },
+    }, {
+        responsive: true,
+    });
+
+    function showUserOwnershipForPath(queryPath) {
+        const userData = aggregateUsers(queryPath);
+
+        Plotly.animate(rightDivElement, {
+            data: [userData],
+            traces: [0],
+        }, {
+            transition: {
+                duration: 1000,
+                easing: "cubic-in-out"
+            },
+            frame: {
+                duration: 1000,
+            },
+        });
+    }
+
+    // start with showing overall aggregation result
+    showUserOwnershipForPath(null);
+
+    leftDivElement.on('plotly_click', function (eventData) {
+        const point = eventData.points[0];
+        console.log(`data point clicked: ${point.id}`)
+
+        let queryPath = point.id;
+        if (point.id == rootPathReplacement.id) {
+            queryPath = null;
+        }
+
+        showUserOwnershipForPath(queryPath);
+    });
+
+    // update main graph if scaling changes
+    logScaleElement.onchange = (event) => {
+        Plotly.animate(leftDivElement, {
+            data: [aggregate()],
+            traces: [0],
+        }, {
+            transition: {
+                duration: 1000,
+                easing: "cubic-in-out"
+            },
+            frame: {
+                duration: 1000,
+            },
+        });
+    };
+
+</script>

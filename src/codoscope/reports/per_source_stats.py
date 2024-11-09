@@ -21,8 +21,8 @@ from codoscope.reports.common import (
 from codoscope.state import SourceType, StateModel
 from codoscope.widgets.activity_heatmap import activity_heatmap
 from codoscope.widgets.aggregated_counts import aggregated_counts
-from codoscope.widgets.code_ownership import code_ownership
-from codoscope.widgets.common import PlotlyFigureWidget
+from codoscope.widgets.code_ownership_v2 import code_ownership_v2
+from codoscope.widgets.common import PlotlyFigureWidget, WidgetBase
 from codoscope.widgets.line_counts_stats import line_counts_stats
 
 LOGGER = logging.getLogger(__name__)
@@ -69,7 +69,7 @@ class PerSourceStatsReport(ReportBase):
         report_path: str,
         df: pandas.DataFrame,
     ):
-        widgets: list[PlotlyFigureWidget | None] = [
+        widgets: list[WidgetBase | None] = [
             aggregated_counts(
                 df,
                 group_by=["activity_type"],
@@ -91,8 +91,11 @@ class PerSourceStatsReport(ReportBase):
             )
             widgets.append(line_counts_widget)
 
-            code_ownership_widget = code_ownership(df)
-            widgets.append(code_ownership_widget)
+            # code_ownership_widget = code_ownership(df)
+            # widgets.append(code_ownership_widget)
+
+            code_ownership_widget_v2 = code_ownership_v2(df)
+            widgets.append(code_ownership_widget_v2)
 
         render_widgets_report(
             report_path,

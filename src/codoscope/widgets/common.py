@@ -48,6 +48,10 @@ class PlotlyFigureWidget(WidgetBase):
         return self.figure.to_html(full_html=False, include_plotlyjs="cdn")
 
 
+def generate_html_element_id(prefix="container"):
+    return f"{prefix}-{uuid.uuid4()}"
+
+
 class CompositeWidget(WidgetBase):
     def __init__(
         self,
@@ -58,7 +62,7 @@ class CompositeWidget(WidgetBase):
         self.padding: int = padding
 
     def get_html(self) -> str:
-        id_ = "container-%s" % uuid.uuid4()
+        id_ = generate_html_element_id()
         html: str = f'<div id="{id_}">'
         for row in self.rows:
             html += f'<div style="display: flex;">'

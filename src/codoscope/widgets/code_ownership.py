@@ -3,9 +3,9 @@ from collections import defaultdict
 import pandas
 import plotly.graph_objects as go
 
+from codoscope.common import Colors, convert_timezone
 from codoscope.reports.common import setup_default_layout
 from codoscope.widgets.common import PlotlyFigureWidget
-from codoscope.common import Colors, convert_timezone
 
 
 # TODO: add a way to only show current code base (how to detect the file movements?)
@@ -17,6 +17,9 @@ def code_ownership(
     # make sure we only have commits
     commits_df = activity_df[activity_df["activity_type"] == "commit"].copy()
 
+    # remove merge commits as useless
+    commits_df = commits_df[commits_df["commit_is_merge_commit"] == False]
+
     if len(commits_df) == 0:
         return None
 
@@ -24,26 +27,11 @@ def code_ownership(
     commits_df = convert_timezone(commits_df, timezone_name="utc")
     commits_df = commits_df.set_index("timestamp")
 
-    # user -> leaf path -> counts
-    all_users_counts_map = defaultdict(
-        lambda: defaultdict(
-            lambda: {
-                "changed_count": 0,
-                "changed_lines_count": 0,
-            }
-        )
-    )
-
     # leaf path -> counts
     path_counts = defaultdict(lambda: {"changed_lines_count": 0})
 
     for _, row in commits_df.iterrows():
-        user = row["user"]
-        user_counts_map = all_users_counts_map[user]
         for path, stat in row["commit_changed_files_map"].items():
-            user_counts_map[path]["changed_count"] += 1
-            user_counts_map[path]["changed_lines_count"] += stat["added"]
-            user_counts_map[path]["changed_lines_count"] += stat["deleted"]
             path_counts[path]["changed_lines_count"] += stat["added"]
             path_counts[path]["changed_lines_count"] += stat["deleted"]
 
@@ -91,9 +79,6 @@ def code_ownership(
         return ids, labels, parents, values
 
     ids, labels, parents, values = aggregate()
-
-    # TODO: upon clicking update another simple bar plot map showing top
-    # contributors by changed lines using JS?
 
     fig = go.Figure()
 
