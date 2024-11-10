@@ -31,7 +31,7 @@ from codoscope.widgets.activity_by_weekday import (
 )
 from codoscope.widgets.activity_heatmap import activity_heatmap
 from codoscope.widgets.aggregated_counts import aggregated_counts
-from codoscope.widgets.code_ownership import code_ownership
+from codoscope.widgets.code_ownership_v2 import code_ownership_v2
 from codoscope.widgets.common import CompositeWidget, PlotlyFigureWidget, Widget
 from codoscope.widgets.line_counts_stats import line_counts_stats
 
@@ -233,9 +233,10 @@ class PerUserStatsReport(ReportBase):
 
         for (source_name,), per_source_commits_df in commits_df.groupby(["source_name"]):
             widgets.append(
-                code_ownership(
+                code_ownership_v2(
                     per_source_commits_df,
                     title=f"Code changes ({source_name})",
+                    show_users_breakdown_pane=False,
                 )
             )
 

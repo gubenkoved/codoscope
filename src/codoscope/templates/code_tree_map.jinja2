@@ -3,11 +3,11 @@
 <div id="{{container_id}}" style="display: flex; height: {{height}};">
     <div style="flex: 3; position: relative;" class="code-tree-left">
         <div style="position: absolute; top: 0px; left: 10px; padding: 4px; background: white; font-size: 12px;">
-            <label>
-                <input type="checkbox" class="code-tree-log-scale-input">Log scaling
+            <label class="code-tree-log-scale">
+                <input type="checkbox">Log scaling
             </label>
-            <label>
-                <input type="checkbox" class="code-tree-hide-removed" checked>Hide removed
+            <label class="code-tree-hide-removed">
+                <input type="checkbox"  checked>Hide removed
             </label>
         </div>
     </div>
@@ -20,15 +20,26 @@
     // and second allows to embed it into the JS source code to be properly
     // interpretted
     const rawData = JSON.parse({{ data | tojson  | tojson  }});
-    const title = '{{title}}';
-    const maxDepth = {{max_depth}};
-    const fontFamily = 'Ubuntu';
+    const title = {{ title | tojson }};
+    const maxDepth = {{ max_depth }};
+    const fontFamily = {{ font | tojson }};
+    const showUsersBreakdownPane = {{ show_users_breakdown_pane | tojson }}
 
-    const containerId = "{{container_id}}";
+    const containerId = {{ container_id | tojson }};
     const leftDivElement = document.querySelector(`#${containerId} .code-tree-left`);
     const rightDivElement = document.querySelector(`#${containerId} .code-tree-right`);
-    const logScaleElement = document.querySelector(`#${containerId} .code-tree-log-scale-input`);
-    const hideRemovedElement = document.querySelector(`#${containerId} .code-tree-hide-removed`);
+    const logScaleCheckboxElement = document.querySelector(`#${containerId} .code-tree-log-scale input`);
+    const hideRemovedContainerElement = document.querySelector(`#${containerId} .code-tree-hide-removed`);
+    const hideRemovedCheckboxElement = document.querySelector(`#${containerId} .code-tree-hide-removed input`);
+
+    if (!showUsersBreakdownPane) {
+        rightDivElement.style.display = "none";
+
+        // detecting removed file does not make sense if we have only partial changes over the file
+        // that belong to the user
+        hideRemovedCheckboxElement.checked = false;
+        hideRemovedContainerElement.style.display = "none";
+    }
 
     function getParentPath(path) {
         let parts = path.split('/').filter(Boolean);
@@ -60,7 +71,7 @@
         const customData = []
         const values = []
         const pathToIndexMap = new Map();
-        const hideRemoved = hideRemovedElement.checked;
+        const hideRemoved = hideRemovedCheckboxElement.checked;
 
         function ensureItem(path) {
             if (!pathToIndexMap.has(path)) {
@@ -95,7 +106,7 @@
 
         function countsToValue(counts) {
             let value = counts.added_lines + counts.deleted_lines;
-            if (logScaleElement.checked) {
+            if (logScaleCheckboxElement.checked) {
                 if (value <= 1) {
                     value = 1;
                 }
@@ -123,6 +134,8 @@
             }
         }
 
+        const startTime = performance.now();
+
         for (const [path, perUserData] of Object.entries(rawData)) {
             if (hideRemoved && isRemovedPath(perUserData)) {
                 continue;
@@ -132,6 +145,8 @@
                 propagate(path, countsData);
             }
         }
+
+        console.log(`dataForMainCodemap execution time: ${performance.now() - startTime} milliseconds`);
 
         return {
             type: "treemap",
@@ -156,7 +171,7 @@
 
     // not overly efficient implementation, but it works quite fast anyway
     function userCountsMapForPath(queryPath) {
-        const hideRemoved = hideRemovedElement.checked;
+        const hideRemoved = hideRemovedCheckboxElement.checked;
         const userCountsMap = new Map();
 
         function ensureUser(user) {
@@ -194,8 +209,6 @@
     }
 
     function dataForUsersCodemap(queryPath) {
-        const userCountsMap = userCountsMapForPath(queryPath);
-
         const ids = []
         const labels = []
         const values = []
@@ -228,10 +241,14 @@
             return value;
         }
 
+        const startTime = performance.now();
+
         // adding "ALL" group
         const rootIndex = ensureItem(rootReplacement.id);
         labels[rootIndex] = rootReplacement.label;
         texts[rootIndex] = "";
+
+        const userCountsMap = userCountsMapForPath(queryPath);
 
         userCountsMap.forEach((value, key) => {
             // add user itself
@@ -254,6 +271,8 @@
             texts[deletedElementIdx] = value.deleted_lines;
         });
 
+        console.log(`dataForUsersCodemap execution time: ${performance.now() - startTime} milliseconds`);
+
         return {
             type: "treemap",
             ids: ids,
@@ -274,7 +293,11 @@
         }
     }
 
-    Plotly.newPlot(leftDivElement, [dataForMainCodemap()], {
+    const config = {
+        responsive: true,
+    };
+
+    const defaultLayout = {
         title: {
             text: title,
             font: {
@@ -288,27 +311,25 @@
             b: 10,
             t: 50,
         },
-    }, {
-        responsive: true,
-    });
-    Plotly.newPlot(rightDivElement, [dataForUsersCodemap(null)], {
-        title: {
-            text: 'Users',
-            font: {
-                family: fontFamily,
-            },
-        },
-        margin: {
-            l: 10,
-            r: 10,
-            b: 10,
-            t: 50,
-        },
-    }, {
-        responsive: true,
-    });
+    };
+
+    let mainTreemapLayout = structuredClone(defaultLayout);
+    mainTreemapLayout.title.text = title;
+
+    Plotly.newPlot(leftDivElement, [dataForMainCodemap()], mainTreemapLayout, config);
+
+    let usersTreemapLayout = structuredClone(defaultLayout);
+    usersTreemapLayout.title.text = 'Users breakdown';
+
+    if (showUsersBreakdownPane) {
+        Plotly.newPlot(rightDivElement, [dataForUsersCodemap(null)], usersTreemapLayout, config);
+    }
 
     function showUserOwnershipForPath(queryPath) {
+        if (!showUsersBreakdownPane) {
+            return;
+        }
+
         const userData = dataForUsersCodemap(queryPath);
 
         Plotly.animate(rightDivElement, {
@@ -360,11 +381,11 @@
     }
 
     // update main graph if scaling changes
-    logScaleElement.onchange = (event) => {
+    logScaleCheckboxElement.onchange = (event) => {
         updateMainCodemap();
     };
 
-    hideRemovedElement.onchange = (event) => {
+    hideRemovedCheckboxElement.onchange = (event) => {
         updateMainCodemap();
         showUserOwnershipForPath(lastQueryPath);
     };

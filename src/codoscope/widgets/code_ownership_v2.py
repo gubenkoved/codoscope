@@ -11,6 +11,7 @@ def code_ownership_v2(
     title: str = "Code changes map",
     max_depth: int = 4,
     height: int | None = None,
+    show_users_breakdown_pane: bool = True,
 ) -> Widget | None:
 
     # make sure we only have commits
@@ -50,6 +51,8 @@ def code_ownership_v2(
             "max_depth": max_depth,
             "height": height or "100%",
             "container_id": generate_html_element_id(),
+            "show_users_breakdown_pane": show_users_breakdown_pane,
+            "font": "Ubuntu",
         },
     )
 
