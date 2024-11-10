@@ -94,7 +94,7 @@ def render_html_report(path: str, body: str, title: str) -> None:
     tz_name = local_tz.tzname(now)
 
     html: str = render_jinja_template(
-        "report.html.jinja2",
+        "report.jinja2",
         context={
             "title": f"codoscope :: {title}",
             "body": body,

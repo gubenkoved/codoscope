@@ -58,7 +58,7 @@ class PrReviewsReport(ReportBase):
 
         with open(out_path, "w") as out_file:
             rendered_text = render_jinja_template(
-                "reviews_v2.html.jinja2",
+                "reviews_v2.jinja2",
                 context={
                     "title": "codoscope :: reviewers",
                     "data_model": reviews_model,
