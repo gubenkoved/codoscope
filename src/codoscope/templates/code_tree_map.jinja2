@@ -50,7 +50,7 @@
             totalDeleted += countsData.deleted_lines;
         }
 
-        return totalAdded == totalDeleted;
+        return totalDeleted >= totalAdded;
     }
 
     function dataForMainCodemap() {
