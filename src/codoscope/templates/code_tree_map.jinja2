@@ -2,9 +2,12 @@
 <script charset="utf-8" src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <div id="{{container_id}}" style="display: flex; height: {{height}};">
     <div style="flex: 3; position: relative;" class="code-tree-left">
-        <div style="position: absolute; top: 0px; left: 10px; padding: 4px; background: white;">
+        <div style="position: absolute; top: 0px; left: 10px; padding: 4px; background: white; font-size: 12px;">
             <label>
                 <input type="checkbox" class="code-tree-log-scale-input">Log scaling
+            </label>
+            <label>
+                <input type="checkbox" class="code-tree-hide-removed" checked>Hide removed
             </label>
         </div>
     </div>
@@ -25,6 +28,7 @@
     const leftDivElement = document.querySelector(`#${containerId} .code-tree-left`);
     const rightDivElement = document.querySelector(`#${containerId} .code-tree-right`);
     const logScaleElement = document.querySelector(`#${containerId} .code-tree-log-scale-input`);
+    const hideRemovedElement = document.querySelector(`#${containerId} .code-tree-hide-removed`);
 
     function getParentPath(path) {
         let parts = path.split('/').filter(Boolean);
@@ -37,13 +41,26 @@
         label: "ROOT",
     };
 
-    function aggregate() {
+    function isRemovedPath(perUserData) {
+        let totalAdded = 0;
+        let totalDeleted = 0;
+
+        for (const [user, countsData] of Object.entries(perUserData)) {
+            totalAdded += countsData.added_lines;
+            totalDeleted += countsData.deleted_lines;
+        }
+
+        return totalAdded == totalDeleted;
+    }
+
+    function dataForMainCodemap() {
         const ids = []
         const labels = []
         const parents = []
         const customData = []
         const values = []
         const pathToIndexMap = new Map();
+        const hideRemoved = hideRemovedElement.checked;
 
         function ensureItem(path) {
             if (!pathToIndexMap.has(path)) {
@@ -106,8 +123,12 @@
             }
         }
 
-        for (const [path, userData] of Object.entries(rawData)) {
-            for (const [user, countsData] of Object.entries(userData)) {
+        for (const [path, perUserData] of Object.entries(rawData)) {
+            if (hideRemoved && isRemovedPath(perUserData)) {
+                continue;
+            }
+
+            for (const [user, countsData] of Object.entries(perUserData)) {
                 propagate(path, countsData);
             }
         }
@@ -135,6 +156,7 @@
 
     // not overly efficient implementation, but it works quite fast anyway
     function userCountsMapForPath(queryPath) {
+        const hideRemoved = hideRemovedElement.checked;
         const userCountsMap = new Map();
 
         function ensureUser(user) {
@@ -147,8 +169,12 @@
             return userCountsMap.get(user);
         }
 
-        for (const [path, userData] of Object.entries(rawData)) {
-            for (const [user, countsData] of Object.entries(userData)) {
+        for (const [path, perUserData] of Object.entries(rawData)) {
+            if (hideRemoved && isRemovedPath(perUserData)) {
+                continue;
+            }
+
+            for (const [user, countsData] of Object.entries(perUserData)) {
                 let curPath = path;
                 while (true) {
                     if (curPath == queryPath) {
@@ -167,7 +193,7 @@
         return userCountsMap;
     }
 
-    function aggregateUsers(queryPath) {
+    function dataForUsersCodemap(queryPath) {
         const userCountsMap = userCountsMapForPath(queryPath);
 
         const ids = []
@@ -248,7 +274,7 @@
         }
     }
 
-    Plotly.newPlot(leftDivElement, [aggregate()], {
+    Plotly.newPlot(leftDivElement, [dataForMainCodemap()], {
         title: {
             text: title,
             font: {
@@ -265,7 +291,7 @@
     }, {
         responsive: true,
     });
-    Plotly.newPlot(rightDivElement, [aggregateUsers(null)], {
+    Plotly.newPlot(rightDivElement, [dataForUsersCodemap(null)], {
         title: {
             text: 'Users',
             font: {
@@ -283,7 +309,7 @@
     });
 
     function showUserOwnershipForPath(queryPath) {
-        const userData = aggregateUsers(queryPath);
+        const userData = dataForUsersCodemap(queryPath);
 
         Plotly.animate(rightDivElement, {
             data: [userData],
@@ -299,8 +325,10 @@
         });
     }
 
+    let lastQueryPath = null;
+
     // start with showing overall aggregation result
-    showUserOwnershipForPath(null);
+    showUserOwnershipForPath(lastQueryPath);
 
     leftDivElement.on('plotly_click', function (eventData) {
         const point = eventData.points[0];
@@ -311,13 +339,14 @@
             queryPath = null;
         }
 
+        lastQueryPath = queryPath;
+
         showUserOwnershipForPath(queryPath);
     });
 
-    // update main graph if scaling changes
-    logScaleElement.onchange = (event) => {
+    function updateMainCodemap() {
         Plotly.animate(leftDivElement, {
-            data: [aggregate()],
+            data: [dataForMainCodemap()],
             traces: [0],
         }, {
             transition: {
@@ -328,6 +357,16 @@
                 duration: 1000,
             },
         });
+    }
+
+    // update main graph if scaling changes
+    logScaleElement.onchange = (event) => {
+        updateMainCodemap();
+    };
+
+    hideRemovedElement.onchange = (event) => {
+        updateMainCodemap();
+        showUserOwnershipForPath(lastQueryPath);
     };
 
 </script>
