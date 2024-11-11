@@ -32,6 +32,9 @@
     const hideRemovedContainerElement = document.querySelector(`#${containerId} .code-tree-hide-removed`);
     const hideRemovedCheckboxElement = document.querySelector(`#${containerId} .code-tree-hide-removed input`);
 
+    let userFilter = null;
+    let pathFilter = null;
+
     if (!showUsersBreakdownPane) {
         rightDivElement.style.display = "none";
 
@@ -52,6 +55,11 @@
         label: "ROOT",
     };
 
+    const allUsersReplacement = {
+        id: '$ROOT$',
+        label: 'ALL',
+    };
+
     function isRemovedPath(perUserData) {
         let totalAdded = 0;
         let totalDeleted = 0;
@@ -65,11 +73,11 @@
     }
 
     function dataForMainCodemap() {
-        const ids = []
-        const labels = []
-        const parents = []
-        const customData = []
-        const values = []
+        const ids = [];
+        const labels = [];
+        const parents = [];
+        const customData = [];
+        const values = [];
         const pathToIndexMap = new Map();
         const hideRemoved = hideRemovedCheckboxElement.checked;
 
@@ -118,15 +126,18 @@
         function propagate(path, counts) {
             const idx = ensureItem(path);
             labels[idx] = getLabel(path);
+
             if (customData[idx] == null) {
                 customData[idx] = {
                     added_lines: 0,
                     deleted_lines: 0,
                 }
             }
+
             customData[idx].added_lines += counts.added_lines;
             customData[idx].deleted_lines += counts.deleted_lines;
             values[idx] += countsToValue(counts);
+
             if (path != rootPathReplacement.id) {
                 const parentPath = getParent(path);
                 parents[idx] = parentPath;
@@ -142,6 +153,10 @@
             }
 
             for (const [user, countsData] of Object.entries(perUserData)) {
+                if (userFilter != null && user != userFilter) {
+                    continue;
+                }
+
                 propagate(path, countsData);
             }
         }
@@ -209,18 +224,14 @@
     }
 
     function dataForUsersCodemap(queryPath) {
-        const ids = []
-        const labels = []
-        const values = []
-        const parents = []
-        const texts = []
-        const colors = []
+        const ids = [];
+        const labels = [];
+        const values = [];
+        const parents = [];
+        const texts = [];
+        const colors = [];
+        const customData = [];
         const idToIndexMap = new Map();
-
-        const rootReplacement = {
-            id: '$ROOT$',
-            label: 'ALL',
-        }
 
         function ensureItem(id) {
             if (!idToIndexMap.has(id)) {
@@ -232,6 +243,7 @@
                 parents.push(null);
                 texts.push(null);
                 colors.push(null);
+                customData.push(null);
             }
             return idToIndexMap.get(id);
         }
@@ -244,31 +256,41 @@
         const startTime = performance.now();
 
         // adding "ALL" group
-        const rootIndex = ensureItem(rootReplacement.id);
-        labels[rootIndex] = rootReplacement.label;
+        const rootIndex = ensureItem(allUsersReplacement.id);
+        labels[rootIndex] = allUsersReplacement.label;
         texts[rootIndex] = "";
+        customData[rootIndex] = {
+            user: null,
+        };
 
         const userCountsMap = userCountsMapForPath(queryPath);
 
-        userCountsMap.forEach((value, key) => {
-            // add user itself
-            // add subcategories for added and removed
-            const userElementIdx = ensureItem(key);
-            labels[userElementIdx] = key;
-            parents[userElementIdx] = rootReplacement.id;
-            texts[userElementIdx] = `added: ${value.added_lines}, removed: ${value.deleted_lines}`;
+        userCountsMap.forEach((stats, user) => {
+            const userElementIdx = ensureItem(user);
+            labels[userElementIdx] = user;
+            parents[userElementIdx] = allUsersReplacement.id;
+            texts[userElementIdx] = `added: ${stats.added_lines}, removed: ${stats.deleted_lines}`;
+            customData[userElementIdx] = {
+                user: user,
+            };
 
-            const addedElementIdx = ensureItem(`${key} :: added`);
+            const addedElementIdx = ensureItem(`${user} :: added`);
             labels[addedElementIdx] = "added";
-            values[addedElementIdx] = value.added_lines;
-            parents[addedElementIdx] = key;
-            texts[addedElementIdx] = value.added_lines;
+            values[addedElementIdx] = stats.added_lines;
+            parents[addedElementIdx] = user;
+            texts[addedElementIdx] = stats.added_lines;
+            customData[addedElementIdx] = {
+                user: user,
+            };
 
-            const deletedElementIdx = ensureItem(`${key} :: deleted`);
+            const deletedElementIdx = ensureItem(`${user} :: deleted`);
             labels[deletedElementIdx] = "deleted";
-            values[deletedElementIdx] = value.deleted_lines;
-            parents[deletedElementIdx] = key;
-            texts[deletedElementIdx] = value.deleted_lines;
+            values[deletedElementIdx] = stats.deleted_lines;
+            parents[deletedElementIdx] = user;
+            texts[deletedElementIdx] = stats.deleted_lines;
+            customData[deletedElementIdx] = {
+                user: user,
+            };
         });
 
         console.log(`dataForUsersCodemap execution time: ${performance.now() - startTime} milliseconds`);
@@ -280,6 +302,7 @@
             parents: parents,
             values: values,
             text: texts,
+            customdata: customData,
             branchvalues: "reminder",
             textfont: {
                 family: fontFamily,
@@ -325,7 +348,7 @@
         Plotly.newPlot(rightDivElement, [dataForUsersCodemap(null)], usersTreemapLayout, config);
     }
 
-    function showUserOwnershipForPath(queryPath) {
+    function updateUsersBreakdownMap(queryPath) {
         if (!showUsersBreakdownPane) {
             return;
         }
@@ -346,10 +369,8 @@
         });
     }
 
-    let lastQueryPath = null;
-
     // start with showing overall aggregation result
-    showUserOwnershipForPath(lastQueryPath);
+    updateUsersBreakdownMap(pathFilter);
 
     leftDivElement.on('plotly_click', function (eventData) {
         const point = eventData.points[0];
@@ -360,9 +381,16 @@
             queryPath = null;
         }
 
-        lastQueryPath = queryPath;
+        pathFilter = queryPath;
 
-        showUserOwnershipForPath(queryPath);
+        updateUsersBreakdownMap(queryPath);
+    });
+
+    rightDivElement.on('plotly_click', function (eventData) {
+        const point = eventData.points[0];
+        console.log(`data point clicked: ${point.id}`)
+        userFilter = point.customdata.user;
+        updateMainCodemap();
     });
 
     function updateMainCodemap() {
@@ -387,7 +415,7 @@
 
     hideRemovedCheckboxElement.onchange = (event) => {
         updateMainCodemap();
-        showUserOwnershipForPath(lastQueryPath);
+        updateUsersBreakdownMap(pathFilter);
     };
 
 </script>
