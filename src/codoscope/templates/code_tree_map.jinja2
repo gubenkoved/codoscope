@@ -32,8 +32,11 @@
     const hideRemovedContainerElement = document.querySelector(`#${containerId} .code-tree-hide-removed`);
     const hideRemovedCheckboxElement = document.querySelector(`#${containerId} .code-tree-hide-removed input`);
 
+    // dynamic filters
     let userFilter = null;
     let pathFilter = null;
+    let addedOnlyFilter = false;
+    let deletedOnlyFilter = false;
 
     if (!showUsersBreakdownPane) {
         rightDivElement.style.display = "none";
@@ -152,12 +155,28 @@
                 continue;
             }
 
-            for (const [user, countsData] of Object.entries(perUserData)) {
+            for (const [user, counts] of Object.entries(perUserData)) {
                 if (userFilter != null && user != userFilter) {
                     continue;
                 }
 
-                propagate(path, countsData);
+                if (addedOnlyFilter) {
+                    if (counts.added_lines > 0) {
+                        propagate(path, {
+                            added_lines: counts.added_lines,
+                            deleted_lines: 0,
+                        });
+                    }
+                } else if (deletedOnlyFilter) {
+                    if (counts.deleted_lines > 0) {
+                        propagate(path, {
+                            added_lines: 0,
+                            deleted_lines: counts.deleted_lines,
+                        });
+                    }
+                } else {
+                    propagate(path, counts);
+                }
             }
         }
 
@@ -261,6 +280,8 @@
         texts[rootIndex] = "";
         customData[rootIndex] = {
             user: null,
+            addedOnly: false,
+            deletedOnly: false,
         };
 
         const userCountsMap = userCountsMapForPath(queryPath);
@@ -272,6 +293,8 @@
             texts[userElementIdx] = `added: ${stats.added_lines}, removed: ${stats.deleted_lines}`;
             customData[userElementIdx] = {
                 user: user,
+                addedOnly: false,
+                deletedOnly: false,
             };
 
             const addedElementIdx = ensureItem(`${user} :: added`);
@@ -281,6 +304,8 @@
             texts[addedElementIdx] = stats.added_lines;
             customData[addedElementIdx] = {
                 user: user,
+                addedOnly: true,
+                deletedOnly: false,
             };
 
             const deletedElementIdx = ensureItem(`${user} :: deleted`);
@@ -290,6 +315,8 @@
             texts[deletedElementIdx] = stats.deleted_lines;
             customData[deletedElementIdx] = {
                 user: user,
+                addedOnly: false,
+                deletedOnly: true,
             };
         });
 
@@ -336,6 +363,16 @@
         },
     };
 
+    const animationDefaultConfig = {
+        transition: {
+            duration: 1000,
+            easing: "cubic-in-out",
+        },
+        frame: {
+            duration: 1000,
+        },
+    };
+
     let mainTreemapLayout = structuredClone(defaultLayout);
     mainTreemapLayout.title.text = title;
 
@@ -358,15 +395,7 @@
         Plotly.animate(rightDivElement, {
             data: [userData],
             traces: [0],
-        }, {
-            transition: {
-                duration: 1000,
-                easing: "cubic-in-out"
-            },
-            frame: {
-                duration: 1000,
-            },
-        });
+        }, animationDefaultConfig);
     }
 
     // start with showing overall aggregation result
@@ -390,6 +419,8 @@
         const point = eventData.points[0];
         console.log(`data point clicked: ${point.id}`)
         userFilter = point.customdata.user;
+        addedOnlyFilter =  point.customdata.addedOnly;
+        deletedOnlyFilter = point.customdata.deletedOnly;
         updateMainCodemap();
     });
 
@@ -397,15 +428,7 @@
         Plotly.animate(leftDivElement, {
             data: [dataForMainCodemap()],
             traces: [0],
-        }, {
-            transition: {
-                duration: 1000,
-                easing: "cubic-in-out"
-            },
-            frame: {
-                duration: 1000,
-            },
-        });
+        }, animationDefaultConfig);
     }
 
     // update main graph if scaling changes
