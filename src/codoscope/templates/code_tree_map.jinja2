@@ -33,10 +33,12 @@
     const hideRemovedCheckboxElement = document.querySelector(`#${containerId} .code-tree-hide-removed input`);
 
     // dynamic filters
-    let userFilter = null;
-    let pathFilter = null;
-    let addedOnlyFilter = false;
-    let deletedOnlyFilter = false;
+    const filters = {
+        user: null,
+        path: null,
+        addedOnly: false,
+        deletedOnly: false,
+    };
 
     if (!showUsersBreakdownPane) {
         rightDivElement.style.display = "none";
@@ -156,18 +158,18 @@
             }
 
             for (const [user, counts] of Object.entries(perUserData)) {
-                if (userFilter != null && user != userFilter) {
+                if (filters.user != null && filters.user != user) {
                     continue;
                 }
 
-                if (addedOnlyFilter) {
+                if (filters.addedOnly) {
                     if (counts.added_lines > 0) {
                         propagate(path, {
                             added_lines: counts.added_lines,
                             deleted_lines: 0,
                         });
                     }
-                } else if (deletedOnlyFilter) {
+                } else if (filters.deletedOnly) {
                     if (counts.deleted_lines > 0) {
                         propagate(path, {
                             added_lines: 0,
@@ -385,12 +387,12 @@
         Plotly.newPlot(rightDivElement, [dataForUsersCodemap(null)], usersTreemapLayout, config);
     }
 
-    function updateUsersBreakdownMap(queryPath) {
+    function updateUsersBreakdownMap() {
         if (!showUsersBreakdownPane) {
             return;
         }
 
-        const userData = dataForUsersCodemap(queryPath);
+        const userData = dataForUsersCodemap(filters.path);
 
         Plotly.animate(rightDivElement, {
             data: [userData],
@@ -399,28 +401,29 @@
     }
 
     // start with showing overall aggregation result
-    updateUsersBreakdownMap(pathFilter);
+    updateUsersBreakdownMap();
 
     leftDivElement.on('plotly_click', function (eventData) {
         const point = eventData.points[0];
         console.log(`data point clicked: ${point.id}`)
 
-        let queryPath = point.id;
         if (point.id == rootPathReplacement.id) {
-            queryPath = null;
+            filters.path = null;
+        } else {
+            filters.path = point.id;
         }
 
-        pathFilter = queryPath;
-
-        updateUsersBreakdownMap(queryPath);
+        updateUsersBreakdownMap();
     });
 
     rightDivElement.on('plotly_click', function (eventData) {
         const point = eventData.points[0];
         console.log(`data point clicked: ${point.id}`)
-        userFilter = point.customdata.user;
-        addedOnlyFilter =  point.customdata.addedOnly;
-        deletedOnlyFilter = point.customdata.deletedOnly;
+
+        filters.user = point.customdata.user;
+        filters.addedOnly = point.customdata.addedOnly;
+        filters.deletedOnly = point.customdata.deletedOnly;
+
         updateMainCodemap();
     });
 
@@ -438,7 +441,7 @@
 
     hideRemovedCheckboxElement.onchange = (event) => {
         updateMainCodemap();
-        updateUsersBreakdownMap(pathFilter);
+        updateUsersBreakdownMap();
     };
 
 </script>
