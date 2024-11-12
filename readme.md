@@ -109,6 +109,8 @@ The below is based on public Apache Lucene repository (https://github.com/apache
 
 ![sample-line-counts](https://github.com/user-attachments/assets/d58d4e9e-b80a-451c-a7d7-2a8674285fcf)
 
-![sample-code-map](https://github.com/user-attachments/assets/7225d016-6ed1-4028-b717-ede723d205c6)
+![sample-github-style](https://github.com/user-attachments/assets/c1b38ce9-faec-4431-8843-7e8284676c0b)
+
+![sample-code-map](https://github.com/user-attachments/assets/00f07ebd-ceee-4e07-9f97-c3f3760904da)
 
 ![sample-week-day-stats](https://github.com/user-attachments/assets/5558f704-0768-4f09-97cf-0314b19748e3)
