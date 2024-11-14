@@ -267,7 +267,10 @@ def extract_jira(state: StateModel) -> pandas.DataFrame:
                         }
                     )
 
-    df: pandas.DataFrame = pandas.DataFrame(columns=list(schema)).astype(schema)
+    df: pandas.DataFrame = pandas.DataFrame(
+        data=data,
+        columns=list(schema),
+    ).astype(schema)
 
     df.sort_values(by="timestamp", ascending=True, na_position="first", inplace=True)
 
