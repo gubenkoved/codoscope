@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 from pandas import DataFrame
 
 from codoscope.common import WEEKDAY_ORDER
-from codoscope.reports.common import setup_default_layout
+from codoscope.reports.common import setup_default_layout, time_axis_hours_based
 from codoscope.widgets.common import PlotlyFigureWidget
 
 
@@ -106,16 +106,17 @@ def activity_by_weekday_2d(
     activity_df: pandas.DataFrame,
     title: str | None = None,
     height: int = 600,
+    time_bin_size_hours: float = 0.5,
 ) -> PlotlyFigureWidget | None:
 
     if len(activity_df) == 0:
         return None
 
-    # copy data frame before mking changes
+    # copy data frame before making changes
     activity_df = activity_df.copy()
 
     activity_df["weekday"] = activity_df["timestamp"].apply(lambda x: x.strftime("%A"))
-    activity_df["hour"] = activity_df["timestamp"].apply(lambda x: x.hour)
+    activity_df["day_offset_hours"] = activity_df["timestamp"].apply(lambda x: x.hour + x.minute / 60.0)
 
     fig = go.Figure()
 
@@ -123,26 +124,37 @@ def activity_by_weekday_2d(
         go.Histogram2d(
             name=f"activity count",
             x=activity_df["weekday"],
-            y=activity_df["hour"],
-            nbinsy=24,
+            y=activity_df["day_offset_hours"],
+            ybins=dict(
+                size=time_bin_size_hours,
+            ),
             # better reflect small values
-            # colorscale=[
-            #     [0, 'rgb(0,20,60)'],
-            #     [0.2, 'rgb(10,136,186)'],
-            #     [0.5, 'rgb(242,211,56)'],
-            #     [0.75, 'rgb(242,143,56)'],
-            #     [1, 'rgb(217,30,30)']
-            # ],
+            colorscale=[
+                [0, 'rgb(0,20,60)'],
+                [0.2, 'rgb(10,136,186)'],
+                [0.5, 'rgb(242,211,56)'],
+                [0.75, 'rgb(242,143,56)'],
+                [1, 'rgb(217,30,30)']
+            ],
         ),
     )
 
     setup_default_layout(fig, title or "Activity by weekday")
 
+    tickvals, ticktext = time_axis_hours_based()
+
+    # TODO: fix the hovertemplate so that "Y" value is properly displayed
+    #  using the time format instead of raw value
     fig.update_layout(
         height=height,
         xaxis=dict(
             categoryorder="array",
             categoryarray=WEEKDAY_ORDER,
+        ),
+        yaxis=dict(
+            tickmode="array",
+            tickvals=tickvals,
+            ticktext=ticktext,
         ),
     )
 

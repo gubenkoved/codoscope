@@ -10,7 +10,7 @@ from codoscope.common import (
     date_time_minutes_offset,
     format_minutes_offset,
 )
-from codoscope.reports.common import setup_default_layout, time_axis
+from codoscope.reports.common import setup_default_layout, time_axis_minutes_based
 from codoscope.widgets.common import PlotlyFigureWidget
 
 LOGGER = logging.getLogger(__name__)
@@ -81,7 +81,7 @@ def activity_scatter(
         title=title,
     )
 
-    tickvals, ticktext = time_axis()
+    tickvals, ticktext = time_axis_minutes_based()
 
     fig.update_layout(
         yaxis=dict(

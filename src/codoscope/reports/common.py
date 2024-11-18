@@ -125,14 +125,26 @@ def render_widgets_report(
     render_html_report(path, "\n".join(body_items), title)
 
 
-def time_axis(steps=24):
-    valess = []
+def time_axis_minutes_based(steps=24):
+    values = []
     labels = []
 
     for offset in range(0, 24 * 60 + 1, 24 * 60 // steps):
         hours = offset // 60
         minutes = offset % 60
-        valess.append(offset)
+        values.append(offset)
         labels.append(f"{hours:02}:{minutes:02}")
 
-    return valess, labels
+    return values, labels
+
+
+def time_axis_hours_based():
+    values = []
+    labels = []
+
+    for hour in range(0, 24 + 1):
+        minute = 0
+        values.append(hour)
+        labels.append(f"{hour:02}:{minute:02}")
+
+    return values, labels
