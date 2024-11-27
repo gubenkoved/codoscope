@@ -293,6 +293,8 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
                 convert_components(fields.get("components")),
                 fields.get("labels"),
                 convert_comments(comments),
+                # TODO: load change log using paging as well, as the list is
+                #  trucated in this API
                 convert_change_log(issue.get("changelog"), included_fields=["status"]),
                 dateutil.parser.parse(fields["created"]),
                 dateutil.parser.parse(fields["updated"]),
