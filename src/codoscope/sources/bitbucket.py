@@ -13,6 +13,7 @@ LOGGER = logging.getLogger(__name__)
 
 class ActorModel(VersionedState):
     def __init__(self, account_id: str, display_name: str):
+        super().__init__()
         self.account_id: str = account_id
         self.display_name: str = display_name
 
@@ -20,10 +21,13 @@ class ActorModel(VersionedState):
 class CommentModel(VersionedState):
     def __init__(
         self,
+        comment_id: str,
         author: ActorModel | None,
         message: str | None,
         created_on: datetime.datetime | None,
     ):
+        super().__init__()
+        self.comment_id: str = comment_id
         self.author: ActorModel | None = author
         self.message: str | None = message
         self.created_on: datetime.datetime | None = created_on
@@ -36,6 +40,7 @@ class PullRequestParticipantModel(VersionedState):
         has_approved: bool | None,
         participated_on: datetime.datetime | None,
     ):
+        super().__init__()
         self.user: ActorModel | None = user
         self.has_approved: bool | None = has_approved
         self.participated_on: datetime.datetime | None = participated_on
@@ -57,6 +62,7 @@ class PullRequestModel(VersionedState):
         created_on: datetime.datetime,
         updated_on: datetime.datetime,
     ):
+        super().__init__()
         self.id: int = id
         self.url: str = url
         self.author: ActorModel | None = author
@@ -240,8 +246,10 @@ def ingest_bitbucket(config: dict, state: BitbucketState | None) -> BitbucketSta
                 pr_comments = []
                 for comment in pr.comments():
                     comment_actor = convert_user(comment.user)
+                    comment_id = comment.data["id"]
                     pr_comments.append(
                         CommentModel(
+                            comment_id,
                             comment_actor,
                             comment.raw,
                             dateutil.parser.parse(comment.data["created_on"]),

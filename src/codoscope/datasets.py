@@ -136,6 +136,7 @@ def extract_bitbucket(state: StateModel) -> pandas.DataFrame:
             "bitbucket_pr_title": "string",
             "bitbucket_pr_description": "string",
             "bitbucket_pr_id": "Int64",
+            "bitbucket_pr_comment_id": "string",
             "bitbucket_pr_comment": "string",
         }
     )
@@ -205,6 +206,7 @@ def extract_bitbucket(state: StateModel) -> pandas.DataFrame:
                                     "bitbucket_is_answering_your_own_pr": is_answering_your_own_pr,
                                     "bitbucket_pr_title": pr.title,
                                     "bitbucket_pr_id": pr.id,
+                                    "bitbucket_pr_comment_id": comment.comment_id,
                                     "bitbucket_pr_comment": comment.message,
                                     "bitbucket_project_name": project_name,
                                     "bitbucket_repo_name": repo_name,
@@ -228,6 +230,7 @@ def extract_jira(state: StateModel) -> pandas.DataFrame:
             "jira_item_key": "string",
             "jira_description": "string",
             "jira_summary": "string",
+            "jira_comment_id": "string",
             "jira_message": "string",
         }
     )
@@ -263,6 +266,7 @@ def extract_jira(state: StateModel) -> pandas.DataFrame:
                             "user": comment.created_by.display_name,
                             "user_email": comment.created_by.email,
                             "jira_item_key": item.key,
+                            "jira_comment_id": comment.comment_id,
                             "jira_message": comment.message,
                         }
                     )

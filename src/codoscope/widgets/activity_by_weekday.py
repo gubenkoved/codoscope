@@ -116,7 +116,9 @@ def activity_by_weekday_2d(
     activity_df = activity_df.copy()
 
     activity_df["weekday"] = activity_df["timestamp"].apply(lambda x: x.strftime("%A"))
-    activity_df["day_offset_hours"] = activity_df["timestamp"].apply(lambda x: x.hour + x.minute / 60.0)
+    activity_df["day_offset_hours"] = activity_df["timestamp"].apply(
+        lambda x: x.hour + x.minute / 60.0
+    )
 
     fig = go.Figure()
 
@@ -130,11 +132,11 @@ def activity_by_weekday_2d(
             ),
             # better reflect small values
             colorscale=[
-                [0, 'rgb(0,20,60)'],
-                [0.2, 'rgb(10,136,186)'],
-                [0.5, 'rgb(242,211,56)'],
-                [0.75, 'rgb(242,143,56)'],
-                [1, 'rgb(217,30,30)']
+                [0, "rgb(0,20,60)"],
+                [0.2, "rgb(10,136,186)"],
+                [0.5, "rgb(242,211,56)"],
+                [0.75, "rgb(242,143,56)"],
+                [1, "rgb(217,30,30)"],
             ],
         ),
     )

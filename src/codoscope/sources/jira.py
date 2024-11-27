@@ -18,6 +18,7 @@ class ActorModel(VersionedState):
         display_name: str,
         email: str | None,
     ):
+        super().__init__()
         self.account_id: str = account_id
         self.display_name: str = display_name
         self.email: str | None = email
@@ -26,10 +27,13 @@ class ActorModel(VersionedState):
 class JiraCommentModel(VersionedState):
     def __init__(
         self,
+        comment_id: str,
         message: str,
         created_by: ActorModel,
         created_on: datetime.datetime,
     ):
+        super().__init__()
+        self.comment_id: str = comment_id
         self.message: str = message
         self.created_by: ActorModel = created_by
         self.created_on: datetime.datetime = created_on
@@ -44,6 +48,7 @@ class JiraChangeLogItemModel(VersionedState):
         from_value: str | None,
         to_value: str | None,
     ):
+        super().__init__()
         self.actor: ActorModel = actor
         self.created_on: datetime.datetime = created_on
         self.field: str = field
@@ -71,6 +76,7 @@ class JiraItemModel(VersionedState):
         created_on: datetime.datetime,
         updated_on: datetime.datetime | None,
     ):
+        super().__init__()
         self.id: str = id
         self.key: str = key
         self.item_type: str = item_type
@@ -159,11 +165,12 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
             return None
         return [component["name"] for component in data]
 
-    def convert_comments(data) -> list[JiraCommentModel]:
+    def convert_comments(data: list[dict]) -> list[JiraCommentModel]:
         if not data:
             return []
         return [
             JiraCommentModel(
+                comment_id=comment["id"],
                 message=comment["body"],
                 created_by=convert_actor(comment["author"]),
                 created_on=dateutil.parser.parse(comment["created"]),
