@@ -416,16 +416,18 @@
         updateUsersBreakdownMap();
     });
 
-    rightDivElement.on('plotly_click', function (eventData) {
-        const point = eventData.points[0];
-        console.log(`data point clicked: ${point.id}`)
+    if (showUsersBreakdownPane) {
+        rightDivElement.on('plotly_click', function (eventData) {
+            const point = eventData.points[0];
+            console.log(`data point clicked: ${point.id}`)
 
-        filters.user = point.customdata.user;
-        filters.addedOnly = point.customdata.addedOnly;
-        filters.deletedOnly = point.customdata.deletedOnly;
+            filters.user = point.customdata.user;
+            filters.addedOnly = point.customdata.addedOnly;
+            filters.deletedOnly = point.customdata.deletedOnly;
 
-        updateMainCodemap();
-    });
+            updateMainCodemap();
+        });
+    };
 
     function updateMainCodemap() {
         Plotly.animate(leftDivElement, {
