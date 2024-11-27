@@ -115,6 +115,42 @@ class JiraState(SourceState):
         return sum(len(x.comments or []) for x in self.items_map.values())
 
 
+# constant used by the BitBucket API when returning comments inline with the
+# issue data; when there are more comments, we need to fetch them separately
+DEFAULT_COMMENTS_LIMIT = 100
+
+# values more than 100 do not seem to work
+COMMENTS_PAGE_SIZE = 100
+
+
+# after recent API changes JIRA only returns 100 comments by default and current
+# python API does not expose a way to get all comments for an issue
+def _get_all_comments(jira: api.Jira, issue_id: str) -> list[dict]:
+    offset = 0
+    result = []
+    while True:
+        url = "{base_url}/{issue_id}/comment".format(
+            base_url=jira.resource_url("issue"),
+            issue_id=issue_id,
+        )
+        response = jira.get(
+            url,
+            params={
+                "startAt": offset,
+                "maxResults": COMMENTS_PAGE_SIZE,
+            },
+        )
+        comments_page = response["comments"]
+        result.extend(comments_page)
+        offset += len(comments_page)
+
+        # stop if we do not have full page (use effective page size)
+        if len(comments_page) < response["maxResults"]:
+            break
+
+    return result
+
+
 def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
     state = state or JiraState()
 
@@ -229,8 +265,22 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
         for issue in response["issues"]:
             ingestion_counter += 1
             fields = issue["fields"]
+            issue_id = issue["id"]
+            comments_data = fields.get("comment", {})
+            comments = comments_data.get("comments")
+
+            if len(comments) < comments_data["total"]:
+                LOGGER.debug(
+                    "issue %s seems to have more comments (%d) than inlined (%d), "
+                    "fetching separately",
+                    issue_id,
+                    comments_data["total"],
+                    len(comments),
+                )
+                comments = _get_all_comments(jira, issue_id)
+
             issue_model = JiraItemModel(
-                issue["id"],
+                issue_id,
                 issue["key"],
                 fields["issuetype"]["name"],
                 fields.get("summary"),
@@ -242,7 +292,7 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
                 convert_actor(fields.get("reporter")),
                 convert_components(fields.get("components")),
                 fields.get("labels"),
-                convert_comments(fields.get("comment", {}).get("comments")),
+                convert_comments(comments),
                 convert_change_log(issue.get("changelog"), included_fields=["status"]),
                 dateutil.parser.parse(fields["created"]),
                 dateutil.parser.parse(fields["updated"]),

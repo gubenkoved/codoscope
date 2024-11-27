@@ -84,7 +84,7 @@ def process(config: dict, skip_ingestion: bool = False):
                 ingest(ingestion_config, state)
                 state.save(state_path)
             except Exception as err:
-                LOGGER.error("ingestion round #%d failed! %r", round_idx, err)
+                LOGGER.error("ingestion round #%d failed! %r", round_idx, err, exc_info=True)
     else:
         LOGGER.warning("skipped ingestion as requested")
 
