@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import math
 
@@ -57,6 +58,7 @@ BASE_ACTIVITY_SCHEMA = {
     "source_name": "string",
     "source_type": "string",
     "source_subtype": "string",
+    "activity_id": "string",
     "activity_type": "string",
     # "timestamp": "datetime64[ns]",
     "timestamp": "object",
@@ -64,6 +66,11 @@ BASE_ACTIVITY_SCHEMA = {
     "user_email": "string",
     "size_class": "int",
 }
+
+
+def build_id(*components) -> str:
+    data = "_".join(str(x) for x in components)
+    return hashlib.sha256(data.encode()).hexdigest()
 
 
 def extract_commits(state: StateModel) -> pandas.DataFrame:
@@ -90,6 +97,7 @@ def extract_commits(state: StateModel) -> pandas.DataFrame:
                         "source_name": source_name,
                         "source_type": source.source_type.value,
                         "source_subtype": None,
+                        "activity_id": build_id("git", commit.hexsha),
                         "activity_type": "commit",
                         "timestamp": commit.committed_datetime,
                         "user": commit.author_name,
@@ -151,6 +159,7 @@ def extract_bitbucket(state: StateModel) -> pandas.DataFrame:
                                 "source_name": source_name,
                                 "source_type": source.source_type.value,
                                 "source_subtype": "pr",
+                                "activity_id": build_id("bitbucket", "pr", pr.id),
                                 "activity_type": "pr",
                                 "timestamp": pr.created_on,
                                 "size_class": 15,
@@ -167,17 +176,24 @@ def extract_bitbucket(state: StateModel) -> pandas.DataFrame:
                         for participant in pr.participants or []:
                             if not participant.has_approved:
                                 continue
+                            if participant.user is None:
+                                LOGGER.warning("skipping PR participant w/o user")
+                                continue
                             data.append(
                                 {
                                     "source_name": source_name,
                                     "source_type": source.source_type.value,
                                     "source_subtype": "approved pr",
+                                    "activity_id": build_id(
+                                        "bitbucket",
+                                        "pr-approve",
+                                        pr.id,
+                                        participant.user.account_id,
+                                    ),
                                     "activity_type": "approved pr",
                                     "timestamp": participant.participated_on,
                                     "size_class": 8,
-                                    "user": (
-                                        participant.user.display_name if participant.user else None
-                                    ),
+                                    "user": participant.user.display_name,
                                     "user_email": None,
                                     "bitbucket_pr_title": pr.title,
                                     "bitbucket_pr_id": pr.id,
@@ -196,6 +212,9 @@ def extract_bitbucket(state: StateModel) -> pandas.DataFrame:
                                     "source_name": source_name,
                                     "source_type": source.source_type.value,
                                     "source_subtype": "comment",
+                                    "activity_id": build_id(
+                                        "bitbucket", "pr-comment", pr.id, comment.comment_id
+                                    ),
                                     "activity_type": "pr comment",
                                     "timestamp": comment.created_on,
                                     "size_class": (4 if is_answering_your_own_pr else 6),
@@ -244,6 +263,7 @@ def extract_jira(state: StateModel) -> pandas.DataFrame:
                         "source_name": source_name,
                         "source_type": source.source_type.value,
                         "source_subtype": item.item_type,
+                        "activity_id": build_id("jira", "created", item.id),
                         "activity_type": "created %s" % item.item_type,
                         "timestamp": item.created_on,
                         "size_class": 8,
@@ -260,6 +280,7 @@ def extract_jira(state: StateModel) -> pandas.DataFrame:
                             "source_name": source_name,
                             "source_type": source.source_type.value,
                             "source_subtype": "comment",
+                            "activity_id": build_id("jira", "comment", item.id, comment.comment_id),
                             "activity_type": "jira comment",
                             "timestamp": comment.created_on,
                             "size_class": 4,
