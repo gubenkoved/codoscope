@@ -5,6 +5,7 @@ from enum import StrEnum
 class ProcessorType(StrEnum):
     REMAP_USERS = "remap-users"
     ANONYMIZE = "anonymize"
+    EXPAND_REFERENCES = "expand-references"
 
 
 class ProcessorBase(abc.ABC):

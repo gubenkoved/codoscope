@@ -18,11 +18,13 @@ class Datasets:
         commits_df: pandas.DataFrame,
         bitbucket_df: pandas.DataFrame,
         jira_df: pandas.DataFrame,
+        jira_users_df: pandas.DataFrame,
         reviews_df: pandas.DataFrame,
     ) -> None:
         self.commits_df: pandas.DataFrame = commits_df
         self.bitbucket_df: pandas.DataFrame = bitbucket_df
         self.jira_df: pandas.DataFrame = jira_df
+        self.jira_users_df: pandas.DataFrame = jira_users_df
         self.reviews_df: pandas.DataFrame = reviews_df
 
     def get_all_activity(self) -> pandas.DataFrame:
@@ -50,6 +52,7 @@ class Datasets:
             commits_df=extract_commits(state),
             bitbucket_df=extract_bitbucket(state),
             jira_df=extract_jira(state),
+            jira_users_df=extract_jira_users(state),
             reviews_df=extract_reviews(state),
         )
 
@@ -298,6 +301,37 @@ def extract_jira(state: StateModel) -> pandas.DataFrame:
     ).astype(schema)
 
     df.sort_values(by="timestamp", ascending=True, na_position="first", inplace=True)
+
+    return df
+
+
+def extract_jira_users(state: StateModel) -> pandas.DataFrame:
+    schema = dict(
+        {
+            "account_id": "string",
+            "display_name": "string",
+            "email": "string",
+        }
+    )
+
+    data = []
+    for source_name, source in state.sources.items():
+        if isinstance(source, JiraState):
+            for user in source.users_map.values():
+                data.append(
+                    {
+                        "account_id": user.account_id,
+                        "display_name": user.display_name,
+                        "email": user.email,
+                    }
+                )
+
+    df: pandas.DataFrame = pandas.DataFrame(
+        data=data,
+        columns=list(schema),
+    ).astype(schema)
+
+    df.set_index("account_id", inplace=True)
 
     return df
 
