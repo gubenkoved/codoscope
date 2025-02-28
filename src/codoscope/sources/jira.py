@@ -6,6 +6,7 @@ import atlassian.jira as api
 import dateutil.parser
 import pytz
 
+from codoscope.config import read_optional
 from codoscope.state import SourceState, SourceType, VersionedState
 
 LOGGER = logging.getLogger(__name__)
@@ -22,6 +23,23 @@ class ActorModel(VersionedState):
         self.account_id: str = account_id
         self.display_name: str = display_name
         self.email: str | None = email
+
+
+class UserModel(VersionedState):
+    def __init__(
+        self,
+        account_id: str,
+        display_name: str | None,
+        email: str | None,
+        is_active: bool,
+        account_type: str | None,
+    ):
+        super().__init__()
+        self.account_id: str = account_id
+        self.display_name: str | None = display_name
+        self.email: str | None = email
+        self.is_active: bool = is_active
+        self.account_type: str | None = account_type
 
 
 class JiraCommentModel(VersionedState):
@@ -99,8 +117,11 @@ class JiraState(SourceState):
     def __init__(self):
         super().__init__()
         self.items_map: dict[str, JiraItemModel] = {}
-        # self.users_map: dict[str, ActorModel] = {}
         self.cutoff_date: datetime.datetime | None = None
+        # maintains map from account ID to user for discovered users
+        self.users_map: dict[str, UserModel] = {}
+        self.users_refresh_date: datetime.datetime | None = None
+        self.version = 2
 
     @property
     def source_type(self) -> SourceType:
@@ -114,6 +135,13 @@ class JiraState(SourceState):
     def total_comments_count(self):
         return sum(len(x.comments or []) for x in self.items_map.values())
 
+    def __setstate__(self, state):
+        # initialize the new property
+        if getattr(state, "version", 1) == 1:
+            self.users_refresh_date = None
+
+        self.__dict__.update(state)
+
 
 # constant used by the BitBucket API when returning comments inline with the
 # issue data; when there are more comments, we need to fetch them separately
@@ -121,6 +149,8 @@ DEFAULT_COMMENTS_LIMIT = 100
 
 # values more than 100 do not seem to work
 COMMENTS_PAGE_SIZE = 100
+
+DEFAULT_USER_REFRESH_INTERVAL_DAYS = 7.0
 
 
 # after recent API changes JIRA only returns 100 comments by default and current
@@ -149,6 +179,27 @@ def _get_all_comments(jira: api.Jira, issue_id: str) -> list[dict]:
             break
 
     return result
+
+
+def __populate_users_map(state: JiraState, jira_api: api.Jira, page_size: int = 1000):
+    offset = 0
+    while True:
+        page = jira_api.users_get_all(start=offset, limit=page_size)
+        offset += len(page)
+
+        for user in page:
+            user_model = UserModel(
+                user["accountId"],
+                user.get("displayName"),
+                user.get("emailAddress"),
+                user["active"],
+                user.get("accountType"),
+            )
+            state.users_map[user_model.account_id] = user_model
+
+        # last page reached
+        if len(page) < page_size:
+            break
 
 
 def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
@@ -339,5 +390,24 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
         state.items_count - count_before,
         state.total_comments_count - count_comments_before,
     )
+
+    try:
+        refresh_interval_days = read_optional(
+            config, "users-refresh-interval-days", DEFAULT_USER_REFRESH_INTERVAL_DAYS
+        )
+        refresh_interval_seconds = refresh_interval_days * 24 * 60 * 60
+        now = datetime.datetime.now()
+        seconds_since_refresh = (
+            (now - state.users_refresh_date).total_seconds()
+            if state.users_refresh_date
+            else float("+inf")
+        )
+
+        if seconds_since_refresh >= refresh_interval_seconds:
+            LOGGER.info("updating users map...")
+            __populate_users_map(state, jira)
+            state.users_refresh_date = now
+    except Exception as err:
+        LOGGER.warning('unable to update users map due to "%s"', err)
 
     return state
