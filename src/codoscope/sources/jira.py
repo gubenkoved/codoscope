@@ -345,7 +345,7 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
                 fields.get("labels"),
                 convert_comments(comments),
                 # TODO: load change log using paging as well, as the list is
-                #  trucated in this API
+                #  truncated in this API
                 convert_change_log(issue.get("changelog"), included_fields=["status"]),
                 dateutil.parser.parse(fields["created"]),
                 dateutil.parser.parse(fields["updated"]),
@@ -353,8 +353,15 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
             state.items_map[issue["id"]] = issue_model
             cutoff_date = dateutil.parser.parse(issue["fields"]["updated"])
 
+        # contrary to https://docs.atlassian.com/software/jira/docs/api/REST/9.17.0/#api/2/search-search
+        # the response does NOT contain "total" field, but it has "isLast" marker
+        if "isLast" in response:
+            is_last_page = response["isLast"]
+        else:
+            is_last_page = response["total"] <= start + len(response["issues"])
+
         # graceful handling for the last page w/o false-positive warnings
-        if response["total"] <= start + len(response["issues"]):
+        if is_last_page:
             LOGGER.info("last page of items reached")
             break
 
@@ -371,6 +378,8 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
             start = 0
             LOGGER.info("advancing JQL filter by cutoff date to %s", cutoff_date)
         else:  # use paging approach
+            # TODO: latest Jira API supports "nextPageToken", and it should be
+            #  a preferred way to advance the paging
             start += len(response["issues"])
             LOGGER.warning(
                 "using paging because unable to advance JQL filter by cutoff "
