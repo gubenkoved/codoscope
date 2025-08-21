@@ -4,7 +4,7 @@
 #
 #    pip-compile --output-file=requirements.txt
 #
-atlassian-python-api==4.0.5
+atlassian-python-api==4.0.6
     # via codoscope (setup.py)
 beautifulsoup4==4.13.4
     # via atlassian-python-api
