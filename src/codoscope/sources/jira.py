@@ -225,8 +225,8 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
     LOGGER.debug("timezone set in user profile: %s", my_timezone_name)
     my_timezone = pytz.timezone(my_timezone_name)
 
-    def format_datetime_to_user_tz(datetime: datetime.datetime) -> str:
-        local_datetime = datetime.astimezone(my_timezone)
+    def format_datetime_to_user_tz(dt: datetime.datetime) -> str:
+        local_datetime = dt.astimezone(my_timezone)
         return local_datetime.strftime("%Y-%m-%d %H:%M")
 
     # NOTE: Jira JQL API will use user's timezone to interpret the datetime here
