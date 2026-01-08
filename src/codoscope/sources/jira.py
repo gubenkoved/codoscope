@@ -213,6 +213,7 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
         url=config["url"],
         username=config["username"],
         password=config["password"],
+        cloud=config.get("cloud", True),
     )
 
     ingestion_counter = 0
