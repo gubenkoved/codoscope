@@ -304,6 +304,9 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
     start = 0
 
     while True:
+        # TODO: Jira Cloud  longer supports regular jql method and "enhanced"
+        #  should be used instead (and it does not support "start" parameter, so
+        #  next page token approach has to be used)
         response = jira.jql(
             query,
             start=start,

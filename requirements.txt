@@ -20,7 +20,7 @@ cycler==0.12.1
     # via matplotlib
 deprecated==1.3.1
     # via atlassian-python-api
-faker==40.1.2
+faker==40.4.0
     # via codoscope (setup.py)
 fonttools==4.61.1
     # via matplotlib
@@ -42,9 +42,9 @@ markupsafe==3.0.3
     # via jinja2
 matplotlib==3.10.8
     # via wordcloud
-narwhals==2.15.0
+narwhals==2.16.0
     # via plotly
-numpy==2.4.1
+numpy==2.4.2
     # via
     #   contourpy
     #   matplotlib
@@ -62,7 +62,7 @@ pandas==3.0.0
     # via codoscope (setup.py)
 pathvalidate==3.3.1
     # via codoscope (setup.py)
-pillow==12.1.0
+pillow==12.1.1
     # via
     #   matplotlib
     #   wordcloud
@@ -99,5 +99,5 @@ urllib3==2.6.3
     # via requests
 wordcloud==1.9.6
     # via codoscope (setup.py)
-wrapt==2.0.1
+wrapt==2.1.1
     # via deprecated
