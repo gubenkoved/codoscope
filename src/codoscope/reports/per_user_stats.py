@@ -82,14 +82,12 @@ class PerUserStatsReport(ReportBase):
         wc.generate(text)
         svg = render_word_cloud_html(wc)
 
-        return Widget.from_html(
-            f"""
+        return Widget.from_html(f"""
 <div style="padding: 20px">
     <h2>Commit themes</h2>
     {svg}
 </div>
-"""
-        )
+""")
 
     def emails_timeline(self, df: pandas.DataFrame) -> PlotlyFigureWidget:
         df["user_email"] = df["user_email"].fillna(NA_REPLACEMENT)
@@ -151,14 +149,12 @@ class PerUserStatsReport(ReportBase):
         # git commits preserve local timezones
         commits_df: pandas.DataFrame = df[df["activity_type"] == "commit"].copy()
 
-        no_commits_replacement_widget = Widget.centered(
-            """
+        no_commits_replacement_widget = Widget.centered("""
             <div style="padding: 20px; color: gray; text-align: center; font-size: small;">
                 <b>No data</b><br>
                 <i>no commits to build commit based plot<i>
             </div>
-            """
-        )
+            """)
 
         widgets = [
             activity_scatter(

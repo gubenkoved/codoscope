@@ -209,11 +209,13 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
     count_before = state.items_count
     count_comments_before = state.total_comments_count
 
+    is_cloud = config.get("cloud", True)
+
     jira = api.Jira(
         url=config["url"],
         username=config["username"],
         password=config["password"],
-        cloud=config.get("cloud", True),
+        cloud=is_cloud,
     )
 
     ingestion_counter = 0
@@ -302,17 +304,23 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
     query = get_query(cutoff_date)
     limit = max(10, config.get("jql-query-limit", 100))
     start = 0
+    next_page_token = None
 
     while True:
-        # TODO: Jira Cloud  longer supports regular jql method and "enhanced"
-        #  should be used instead (and it does not support "start" parameter, so
-        #  next page token approach has to be used)
-        response = jira.jql(
-            query,
-            start=start,
-            limit=limit,
-            expand="changelog,comments",
-        )
+        if is_cloud:
+            response = jira.enhanced_jql(
+                query,
+                limit=limit,
+                expand="changelog,comments",
+                nextPageToken=next_page_token,
+            )
+        else:
+            response = jira.jql(
+                query,
+                start=start,
+                limit=limit,
+                expand="changelog,comments",
+            )
 
         if not response["issues"]:
             break
@@ -380,14 +388,14 @@ def ingest_jira(config: dict, state: JiraState | None) -> JiraState:
             # prefer cutoff approach (no paging)
             query = get_query(cutoff_date)
             start = 0
+            next_page_token = None
             LOGGER.info("advancing JQL filter by cutoff date to %s", cutoff_date)
-        else:  # use paging approach
-            # TODO: latest Jira API supports "nextPageToken", and it should be
-            #  a preferred way to advance the paging
+        else:  # use paging approach if we can not advance the query itself
             start += len(response["issues"])
+            next_page_token = response["nextPageToken"]
             LOGGER.warning(
                 "using paging because unable to advance JQL filter by cutoff "
-                "date (most likely due to a lot of times changed in a short "
+                "date (most likely due to a lot of items changed in a short "
                 "period of time around %s)",
                 cutoff_date,
             )
