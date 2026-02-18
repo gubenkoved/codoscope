@@ -11,45 +11,52 @@ from codoscope.reports.registry import REPORTS_BY_TYPE
 from codoscope.sources.bitbucket import ingest_bitbucket
 from codoscope.sources.git import RepoModel, ingest_git_repo
 from codoscope.sources.jira import ingest_jira
-from codoscope.state import StateModel
+from codoscope.state import SourceState, StateModel
 
 LOGGER = logging.getLogger(__name__)
+
+
+def ingest_source(source_config: dict, current_state: SourceState | None) -> SourceState:
+    source_name = source_config["name"]
+
+    LOGGER.info('ingesting "%s" source', source_name)
+
+    if source_config["type"] == "git":
+        assert current_state is None or isinstance(current_state, RepoModel)
+        source_state = ingest_git_repo(
+            source_config,
+            current_state,
+            source_config["path"],
+            source_config["branches"],
+            source_config.get("ingestion-limit"),
+        )
+    elif source_config["type"] == "bitbucket":
+        source_state = ingest_bitbucket(
+            source_config,
+            current_state,
+        )
+    elif source_config["type"] == "jira":
+        source_state = ingest_jira(
+            source_config,
+            current_state,
+        )
+    else:
+        raise ConfigError(f'Unknown source type: {source_config["type"]}')
+
+    return source_state
 
 
 def ingest(ingestion_config: dict, state: StateModel):
     for source_config in ingestion_config["sources"]:
         source_name = source_config["name"]
-        current_state = state.sources.get(source_name)
-
-        LOGGER.info('ingesting "%s" source', source_name)
 
         if not source_config.get("enabled", True):
             LOGGER.warning('skip disabled "%s" source', source_name)
             continue
 
-        if source_config["type"] == "git":
-            assert current_state is None or isinstance(current_state, RepoModel)
-            source_state = ingest_git_repo(
-                source_config,
-                current_state,
-                source_config["path"],
-                source_config["branches"],
-                source_config.get("ingestion-limit"),
-            )
-        elif source_config["type"] == "bitbucket":
-            source_state = ingest_bitbucket(
-                source_config,
-                current_state,
-            )
-        elif source_config["type"] == "jira":
-            source_state = ingest_jira(
-                source_config,
-                current_state,
-            )
-        else:
-            raise ConfigError(f'Unknown source type: {source_config["type"]}')
-
-        state.sources[source_name] = source_state
+        current_state = state.sources.get(source_name)
+        new_state = ingest_source(source_config, current_state)
+        state.sources[source_name] = new_state
 
 
 def run_processors(config: dict, datasets: Datasets) -> None:
